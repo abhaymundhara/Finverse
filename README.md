@@ -1,6 +1,6 @@
 # Finverse
 
-A personal finance playground built with Next.js (App Router) + Tailwind v4. It includes 3D hero visuals, motion-rich landing sections, and a full suite of calculators tailored to the Indian market.
+Personal finance playground built with Next.js (App Router) + Tailwind v4. It includes 3D hero visuals, motion-rich landing sections, and a full suite of calculators tailored to the Indian market.
 
 ## Stack
 
