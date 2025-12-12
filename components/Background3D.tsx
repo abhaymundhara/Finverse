@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Float, useProgress } from "@react-three/drei";
+import { Environment, Float } from "@react-three/drei";
 import * as THREE from "three";
 
 function FloatingShape() {
@@ -94,11 +94,11 @@ function FloatingShape() {
         <torusKnotGeometry args={[1, 0.3, 48, 10]} />
         <meshStandardMaterial
           ref={materialRef}
-          color="#f5f7fb"
-          roughness={0.35}
-          metalness={0.25}
-          emissive="#0f172a"
-          emissiveIntensity={0.12}
+          color="#ffffff"
+          roughness={0.3}
+          metalness={0.2}
+          emissive="#0a0a0a"
+          emissiveIntensity={0.05}
         />
       </mesh>
     </Float>
@@ -106,15 +106,12 @@ function FloatingShape() {
 }
 
 export default function Background3D() {
-  const { progress } = useProgress();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (progress >= 100) {
-      const t = setTimeout(() => setReady(true), 100);
-      return () => clearTimeout(t);
-    }
-  }, [progress]);
+    const t = setTimeout(() => setReady(true), 150); // brief delay to avoid flashes
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-0 pointer-events-none">
