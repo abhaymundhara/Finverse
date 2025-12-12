@@ -18,7 +18,7 @@ export default function CalculatorsLayout({
             <span>Back to Home</span>
           </Link>
           <Link href="/" className="text-2xl font-bold">
-            weneed.money
+            FINVERSE
           </Link>
         </div>
       </nav>

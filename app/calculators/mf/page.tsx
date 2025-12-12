@@ -37,11 +37,26 @@ export default function MFCalculator() {
   }, [method, lumpSum, rate, years, monthlyRate, monthlySip, months]);
 
   const faqs = [
-    "How do I model SIP vs lumpsum returns?",
-    "Do returns change by mutual fund type (equity/debt/hybrid)?",
-    "Is taxation included in this calculation?",
-    "Can I include dividends in the projection?",
-    "What return assumption should I use for Indian equity funds?",
+    {
+      q: "How do I model SIP vs lumpsum returns?",
+      a: "Select SIP or Lump sum; we use an annuity formula for SIP and compound growth for lump sum.",
+    },
+    {
+      q: "Do returns change by mutual fund type (equity/debt/hybrid)?",
+      a: "Yes—equity, debt, and hybrid have different expected returns and risk; the calculator uses your chosen rate.",
+    },
+    {
+      q: "Is taxation included in this calculation?",
+      a: "No, outputs are pre-tax. Adjust for capital gains/holding period separately.",
+    },
+    {
+      q: "Can I include dividends in the projection?",
+      a: "This projection assumes growth/accumulation; dividend payouts are not modeled.",
+    },
+    {
+      q: "What return assumption should I use for Indian equity funds?",
+      a: "Many use 10–12% for diversified equity over long horizons; be conservative for planning.",
+    },
   ];
 
   return (
@@ -152,11 +167,14 @@ export default function MFCalculator() {
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-emerald-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
             </div>
@@ -215,14 +233,6 @@ function InputField({
         )}
       </div>
       <input
-        type="range"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full mt-3 accent-emerald-500"
-      />
     </div>
   );
 }

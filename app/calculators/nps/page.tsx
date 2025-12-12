@@ -32,12 +32,30 @@ export default function NPSCalculator() {
   const pensionYears = 1 / (annuityRate / 100);
 
   const faqs = [
-    "How much tax deduction can I claim under 80CCD for NPS?",
-    "What return should I assume for NPS Tier I?",
-    "How is the 60/40 lump sum vs annuity split handled?",
-    "Is the lump sum taxed on withdrawal?",
-    "What annuity rate should I model for monthly pension?",
-    "Can I change my pension allocation later?",
+    {
+      q: "How much tax deduction can I claim under 80CCD for NPS?",
+      a: "Up to 10% of salary under 80CCD(1) plus an additional ₹50,000 under 80CCD(1B) for Tier I, subject to overall limits.",
+    },
+    {
+      q: "What return should I assume for NPS Tier I?",
+      a: "Many investors model 9–12% for equity allocation and 6–8% for debt; we use your expected return input.",
+    },
+    {
+      q: "How is the 60/40 lump sum vs annuity split handled?",
+      a: "We split the corpus into a lump sum (tax-free under current rules) and a pension allocation that buys an annuity.",
+    },
+    {
+      q: "Is the lump sum taxed on withdrawal?",
+      a: "Currently 60% of the corpus is tax-free on exit; annuity income is taxable per slab.",
+    },
+    {
+      q: "What annuity rate should I model for monthly pension?",
+      a: "Use a conservative annuity/payout rate (e.g., 5–6%) to estimate monthly pension.",
+    },
+    {
+      q: "Can I change my pension allocation later?",
+      a: "Regulations allow some flexibility for asset choices pre-exit; the annuity split applies at exit per NPS rules.",
+    },
   ];
 
   return (
@@ -154,11 +172,14 @@ export default function NPSCalculator() {
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-emerald-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
             </div>

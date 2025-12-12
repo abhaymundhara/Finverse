@@ -19,13 +19,34 @@ export default function HRACalculator() {
   const taxable = Math.max(hraReceived - exemption, 0);
 
   const faqs = [
-    "How do I calculate HRA exemption?",
-    "Can I pay rent to parents and claim HRA?",
-    "Is landlord PAN mandatory?",
-    "What if I also claim home loan benefits?",
-    "Is HRA available if my CTC doesn't list it?",
-    "Metro vs non-metro calculation rules",
-    "What documents are required for HRA?",
+    {
+      q: "How do I calculate HRA exemption?",
+      a: "Exemption is the minimum of: HRA received, (rent paid – 10% of salary), and 50% salary for metro / 40% non-metro.",
+    },
+    {
+      q: "Can I pay rent to parents and claim HRA?",
+      a: "Yes, if they own the property; keep rent receipts and consider showing rental income in their return.",
+    },
+    {
+      q: "Is landlord PAN mandatory?",
+      a: "PAN is usually required if annual rent exceeds ₹1 lakh; otherwise rent receipts may suffice.",
+    },
+    {
+      q: "What if I also claim home loan benefits?",
+      a: "You can claim both HRA and home loan deductions if conditions are met (e.g., different city/house under construction).",
+    },
+    {
+      q: "Is HRA available if my CTC doesn't list it?",
+      a: "No, HRA exemption requires an HRA component in your salary structure.",
+    },
+    {
+      q: "Metro vs non-metro calculation rules",
+      a: "50% of (basic+DA+commission) for metro cities; 40% for non-metro, used in the exemption formula.",
+    },
+    {
+      q: "What documents are required for HRA?",
+      a: "Rent receipts, rental agreement, and landlord PAN if rent > ₹1L/year; address proof may be requested.",
+    },
   ];
 
   return (
@@ -136,11 +157,14 @@ export default function HRACalculator() {
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-indigo-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
               <div className="flex items-start gap-2 text-xs text-white/60 mt-3">

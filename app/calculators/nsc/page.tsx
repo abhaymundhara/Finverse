@@ -16,12 +16,30 @@ export default function NSCCalculator() {
   const interest = maturity - investment;
 
   const faqs = [
-    "What is the minimum amount for NSC?",
-    "Is NSC interest taxable and when?",
-    "Can I withdraw NSC before 5 years?",
-    "What is the current NSC interest rate?",
-    "Does NSC qualify for 80C deduction?",
-    "Can NSC be used as loan collateral?",
+    {
+      q: "What is the minimum amount for NSC?",
+      a: "Minimum ₹1,000; investments in multiples of ₹100 thereafter.",
+    },
+    {
+      q: "Is NSC interest taxable and when?",
+      a: "Interest is taxable; first 4 years’ interest is treated as reinvested, 5th year interest is taxed per slab.",
+    },
+    {
+      q: "Can I withdraw NSC before 5 years?",
+      a: "Premature encashment is restricted and usually allowed only under specific conditions; otherwise lock-in is 5 years.",
+    },
+    {
+      q: "What is the current NSC interest rate?",
+      a: "The rate is set by the government and updated quarterly; enter your current applicable rate.",
+    },
+    {
+      q: "Does NSC qualify for 80C deduction?",
+      a: "Yes, investments up to ₹1.5 lakh per year qualify under Section 80C.",
+    },
+    {
+      q: "Can NSC be used as loan collateral?",
+      a: "Yes, NSC certificates can often be pledged as collateral with banks/post offices.",
+    },
   ];
 
   return (
@@ -105,11 +123,14 @@ export default function NSCCalculator() {
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-amber-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
             </div>

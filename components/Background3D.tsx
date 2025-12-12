@@ -15,7 +15,7 @@ function FloatingShape() {
 
   // Target state refs for smooth lerping
   const targetPos = useRef(new THREE.Vector3(0, 0, 0));
-  const targetScale = useRef(new THREE.Vector3(1.2, 1.2, 1.2));
+  const targetScale = useRef(new THREE.Vector3(1.05, 1.05, 1.05));
   const targetColor = useRef(new THREE.Color("#ffffff"));
 
   const { viewport } = useThree();
@@ -71,14 +71,14 @@ function FloatingShape() {
     }
 
     // 3. Smoothly Interpolate (Lerp) current state to target state
-    const lerpSpeed = delta * 2.0; // Smooth transition speed
+    const lerpSpeed = delta * 1.5; // Slightly slower for smoother motion
 
     meshRef.current.position.lerp(targetPos.current, lerpSpeed);
     meshRef.current.scale.lerp(targetScale.current, lerpSpeed);
 
     // Rotation logic
-    meshRef.current.rotation.x += delta * 0.2;
-    meshRef.current.rotation.y += delta * 0.1;
+    meshRef.current.rotation.x += delta * 0.15;
+    meshRef.current.rotation.y += delta * 0.08;
     // Add scroll-based rotation torque
     meshRef.current.rotation.z = THREE.MathUtils.lerp(
       meshRef.current.rotation.z,
@@ -92,7 +92,7 @@ function FloatingShape() {
       // Evolve distortion based on scroll
       materialRef.current.distortion = THREE.MathUtils.lerp(
         materialRef.current.distortion,
-        progress * 0.4 + 0.2,
+        Math.min(progress * 0.2 + 0.1, 0.3),
         lerpSpeed
       );
     }
@@ -100,22 +100,22 @@ function FloatingShape() {
 
   return (
     <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-      <mesh ref={meshRef} scale={1.2}>
-        <torusKnotGeometry args={[1, 0.3, 100, 16]} />
+      <mesh ref={meshRef} scale={1.1}>
+        <torusKnotGeometry args={[1, 0.3, 64, 12]} />
         <MeshTransmissionMaterial
           ref={materialRef}
           backside={false}
-          samples={4}
-          resolution={512}
-          thickness={0.5}
-          roughness={0.1}
-          transmission={0.95}
+          samples={2}
+          resolution={256}
+          thickness={0.4}
+          roughness={0.15}
+          transmission={0.9}
           ior={1.5}
-          chromaticAberration={0.05}
-          anisotropy={0.1}
-          distortion={0.2}
-          distortionScale={0.1}
-          temporalDistortion={0.1}
+          chromaticAberration={0.03}
+          anisotropy={0.08}
+          distortion={0.15}
+          distortionScale={0.08}
+          temporalDistortion={0.08}
           color="#ffffff"
         />
       </mesh>
@@ -128,19 +128,13 @@ export default function Background3D() {
     <div className="fixed inset-0 z-0 pointer-events-none">
       <Canvas
         camera={{ position: [0, 0, 5], fov: 45 }}
-        dpr={[1, 1.5]} // Optimize for high DPI screens
-        gl={{ antialias: false }} // Disable default antialiasing for performance (post-processing usually handles it, or just rely on high DPR)
+        dpr={[1, 1.2]} // lower DPR for performance
+        gl={{ antialias: false }}
       >
         <color attach="background" args={["#050505"]} />
         <Environment preset="city" />
-        <ambientLight intensity={0.5} />
-        <spotLight
-          position={[10, 10, 10]}
-          angle={0.15}
-          penumbra={1}
-          intensity={1}
-        />
-        <pointLight position={[-10, -10, -10]} intensity={1} />
+        <ambientLight intensity={0.35} />
+        <spotLight position={[10, 10, 10]} angle={0.12} penumbra={0.8} intensity={0.8} />
 
         <FloatingShape />
 
@@ -162,7 +156,7 @@ function Stars() {
 
   return (
     <group ref={group}>
-      {[...Array(50)].map((_, i) => (
+      {[...Array(20)].map((_, i) => (
         <mesh
           key={i}
           position={[

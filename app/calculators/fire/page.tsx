@@ -96,13 +96,34 @@ export default function FIRECalculator() {
   }, [currentAge, currentSavings, monthlyContribution, monthlyRate, retirementAge]);
 
   const faqs = [
-    "How is the FIRE number calculated?",
-    "What withdrawal rate should I use in India?",
-    "How does inflation change my FIRE target?",
-    "What is Coast FIRE vs Lean/Fat FIRE?",
-    "How much should I invest monthly to hit my FIRE number?",
-    "Should I adjust for taxes in retirement?",
-    "What return assumptions are reasonable for India?",
+    {
+      q: "How is the FIRE number calculated?",
+      a: "We take your annual expenses at retirement (inflation-adjusted) and divide by the withdrawal rate.",
+    },
+    {
+      q: "What withdrawal rate should I use in India?",
+      a: "A conservative 3.5–4% is common to account for higher inflation and sequence risk.",
+    },
+    {
+      q: "How does inflation change my FIRE target?",
+      a: "Expenses are grown by your inflation assumption until retirement age, increasing the FIRE number.",
+    },
+    {
+      q: "What is Coast FIRE vs Lean/Fat FIRE?",
+      a: "Coast FIRE is the corpus needed now that can grow to your goal without further contributions; Lean/Fat are 75%/150% of the standard FIRE number.",
+    },
+    {
+      q: "How much should I invest monthly to hit my FIRE number?",
+      a: "The Recommended SIP shown uses your return, inflation, and timeline to close the gap by retirement age.",
+    },
+    {
+      q: "Should I adjust for taxes in retirement?",
+      a: "Yes—plan for post-tax withdrawals. This tool shows pre-tax targets, so add a buffer for taxes.",
+    },
+    {
+      q: "What return assumptions are reasonable for India?",
+      a: "Many use 9–12% for equity-heavy portfolios and 5–7% for blended equity/debt; be conservative.",
+    },
   ];
 
   return (
@@ -337,11 +358,14 @@ export default function FIRECalculator() {
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
               <h3 className="text-xl font-bold mb-4">FAQs</h3>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-emerald-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
             </div>
@@ -400,14 +424,6 @@ function InputField({
         )}
       </div>
       <input
-        type="range"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full mt-3 accent-orange-500"
-      />
     </div>
   );
 }

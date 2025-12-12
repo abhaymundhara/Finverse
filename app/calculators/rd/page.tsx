@@ -25,12 +25,30 @@ export default function RDCalculator() {
   const interest = maturityValue - invested;
 
   const faqs = [
-    "Are RD returns taxable and is TDS deducted?",
-    "What is the minimum and maximum tenure for an RD?",
-    "Do senior citizens get higher RD rates?",
-    "Is there a lock-in or penalty for early withdrawal?",
-    "How is RD interest compounded (monthly vs quarterly)?",
-    "What is the minimum amount to start an RD?",
+    {
+      q: "Are RD returns taxable and is TDS deducted?",
+      a: "Yes, RD interest is taxable per your slab; banks may apply TDS if you exceed limits.",
+    },
+    {
+      q: "What is the minimum and maximum tenure for an RD?",
+      a: "Banks typically offer 6 months up to 10 years; defaults vary by bank.",
+    },
+    {
+      q: "Do senior citizens get higher RD rates?",
+      a: "Most banks offer a small premium rate for senior citizens on RDs.",
+    },
+    {
+      q: "Is there a lock-in or penalty for early withdrawal?",
+      a: "Premature closures usually attract a penalty and reduced interest as per bank policy.",
+    },
+    {
+      q: "How is RD interest compounded (monthly vs quarterly)?",
+      a: "Banks commonly compound RD interest quarterly; this tool approximates with monthly contributions.",
+    },
+    {
+      q: "What is the minimum amount to start an RD?",
+      a: "Commonly ₹100–₹1,000 minimum, depending on the bank’s RD product.",
+    },
   ];
 
   return (
@@ -119,11 +137,14 @@ export default function RDCalculator() {
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-cyan-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
             </div>

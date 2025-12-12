@@ -12,10 +12,10 @@ export default function Hero3D() {
         className="relative z-10 max-w-4xl mx-auto"
       >
         <h1 className="text-6xl md:text-8xl font-bold text-white tracking-tighter mb-6">
-          Wealth
-          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">
+          FINVERSE
+          {/* <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">
             Architecture.
-          </span>
+          </span> */}
         </h1>
 
         <p className="text-xl md:text-2xl text-white/60 max-w-2xl mx-auto mb-10 font-light tracking-wide">

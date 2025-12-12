@@ -20,11 +20,26 @@ export default function IRRCalculator() {
   const irr = useMemo(() => computeIRR(cashflows, tolerance), [cashflows, tolerance]);
 
   const faqs = [
-    "What is IRR and how is it different from CAGR?",
-    "When should I use IRR/XIRR for investments?",
-    "Can IRR handle uneven cashflows?",
-    "What tolerance/precision should I use?",
-    "Is IRR impacted by reinvestment assumptions?",
+    {
+      q: "What is IRR and how is it different from CAGR?",
+      a: "IRR is the rate that makes NPV zero for a series of cashflows; CAGR assumes a single lump sum over time.",
+    },
+    {
+      q: "When should I use IRR/XIRR for investments?",
+      a: "Use IRR/XIRR when you have multiple or irregular cashflows (e.g., SIPs, real estate installments).",
+    },
+    {
+      q: "Can IRR handle uneven cashflows?",
+      a: "Yes, IRR is designed for uneven cashflows spaced evenly by period; XIRR handles exact dates.",
+    },
+    {
+      q: "What tolerance/precision should I use?",
+      a: "A small tolerance (1e-4 to 1e-5) is typically enough for two-decimal accuracy.",
+    },
+    {
+      q: "Is IRR impacted by reinvestment assumptions?",
+      a: "Yes—IRR implicitly assumes interim cashflows are reinvested at the IRR; reality may differ.",
+    },
   ];
 
   return (
@@ -98,11 +113,14 @@ export default function IRRCalculator() {
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-teal-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
             </div>

@@ -29,13 +29,34 @@ export default function SSYCalculator() {
   const totalInterest = maturityValue - totalInvestment;
 
   const faqs = [
-    "How long can I contribute to SSY?",
-    "When does SSY mature?",
-    "Is SSY eligible for 80C?",
-    "What is the minimum and maximum deposit?",
-    "Can I withdraw before maturity?",
-    "How is interest calculated annually?",
-    "How many accounts are allowed per family?",
+    {
+      q: "How long can I contribute to SSY?",
+      a: "Deposits are allowed for 15 years from account opening.",
+    },
+    {
+      q: "When does SSY mature?",
+      a: "The account matures after 21 years from opening.",
+    },
+    {
+      q: "Is SSY eligible for 80C?",
+      a: "Yes, deposits up to ₹1.5 lakh per year qualify under Section 80C.",
+    },
+    {
+      q: "What is the minimum and maximum deposit?",
+      a: "Minimum ₹250 per year; maximum ₹1.5 lakh per year.",
+    },
+    {
+      q: "Can I withdraw before maturity?",
+      a: "Partial withdrawal up to 50% is allowed after age 18 for education/marriage; premature closure only in specific cases.",
+    },
+    {
+      q: "How is interest calculated annually?",
+      a: "Interest is compounded annually at the government-notified rate.",
+    },
+    {
+      q: "How many accounts are allowed per family?",
+      a: "Up to two accounts for two girls (three if the second birth is twins).",
+    },
   ];
 
   return (
@@ -120,11 +141,14 @@ export default function SSYCalculator() {
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-pink-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
             </div>
@@ -183,14 +207,6 @@ function InputField({
         )}
       </div>
       <input
-        type="range"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full mt-3 accent-pink-500"
-      />
     </div>
   );
 }

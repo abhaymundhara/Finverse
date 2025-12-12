@@ -277,14 +277,6 @@ function InputField({
         )}
       </div>
       <input
-        type="range"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full mt-3 accent-blue-500"
-      />
     </div>
   );
 }

@@ -25,11 +25,26 @@ export default function GoalSIPCalculator() {
   const returns = futureCost - totalInvested;
 
   const faqs = [
-    "How is goal inflation applied?",
-    "Can I use this for multiple goals?",
-    "What return assumption should I use for equity funds?",
-    "Is this SIP monthly or annual?",
-    "How to handle step-up SIP for faster goals?",
+    {
+      q: "How is goal inflation applied?",
+      a: "We grow today’s goal amount by your inflation assumption over the selected years to find the future cost.",
+    },
+    {
+      q: "Can I use this for multiple goals?",
+      a: "Run separate calculations per goal (e.g., education, house); sum SIPs if you invest in one portfolio.",
+    },
+    {
+      q: "What return assumption should I use for equity funds?",
+      a: "Many use 10–12% for diversified equity over long horizons; be conservative for short timelines.",
+    },
+    {
+      q: "Is this SIP monthly or annual?",
+      a: "The required SIP shown is monthly.",
+    },
+    {
+      q: "How to handle step-up SIP for faster goals?",
+      a: "You can start lower and increase yearly; this tool shows flat SIP—step-ups will reduce the starting SIP needed.",
+    },
   ];
 
   return (
@@ -123,11 +138,14 @@ export default function GoalSIPCalculator() {
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-green-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
             </div>
@@ -186,14 +204,6 @@ function InputField({
         )}
       </div>
       <input
-        type="range"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full mt-3 accent-green-500"
-      />
     </div>
   );
 }

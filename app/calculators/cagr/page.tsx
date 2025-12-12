@@ -20,11 +20,26 @@ export default function CAGRCalculator() {
   }, [initial, finalValue, years]);
 
   const faqs = [
-    "How do I calculate CAGR?",
-    "When should I use CAGR vs absolute return?",
-    "Is CAGR the same as XIRR?",
-    "Can CAGR be used for SIP returns?",
-    "What is a good CAGR for a business or fund?",
+    {
+      q: "How do I calculate CAGR?",
+      a: "CAGR = (Final / Initial)^(1/years) – 1. This tool computes it for you.",
+    },
+    {
+      q: "When should I use CAGR vs absolute return?",
+      a: "Use CAGR to annualize growth over time; absolute return ignores time and compounding.",
+    },
+    {
+      q: "Is CAGR the same as XIRR?",
+      a: "No. CAGR assumes one lump sum; XIRR handles irregular cashflows and timing.",
+    },
+    {
+      q: "Can CAGR be used for SIP returns?",
+      a: "You can approximate, but XIRR is better for SIPs due to multiple cashflows.",
+    },
+    {
+      q: "What is a good CAGR for a business or fund?",
+      a: "Context-dependent; many equity funds target ~10–12% long term. Compare against benchmarks and risk.",
+    },
   ];
 
   return (
@@ -100,11 +115,14 @@ export default function CAGRCalculator() {
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
               <div className="space-y-2 text-sm text-white/80">
-                {faqs.map((q) => (
-                  <div key={q} className="flex items-start gap-2">
-                    <span className="text-purple-300">•</span>
-                    <span>{q}</span>
-                  </div>
+                {faqs.map((item) => (
+                  <details
+                    key={item.q}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                  >
+                    <summary className="cursor-pointer text-white">{item.q}</summary>
+                    <p className="mt-2 text-white/70">{item.a}</p>
+                  </details>
                 ))}
               </div>
             </div>
@@ -163,14 +181,6 @@ function InputField({
         )}
       </div>
       <input
-        type="range"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full mt-3 accent-purple-500"
-      />
     </div>
   );
 }
