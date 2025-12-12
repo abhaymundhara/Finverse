@@ -253,13 +253,13 @@ export default function DebtPayoffPlanner() {
                     Extra Monthly Payment: ${extraPayment}
                   </label>
                   <input
-                    type="range"
+                    type="number"
                     value={extraPayment}
                     onChange={(e) => setExtraPayment(Number(e.target.value))}
                     min={0}
                     max={2000}
                     step={50}
-                    className="w-full accent-red-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/50"
                   />
                 </div>
               </div>

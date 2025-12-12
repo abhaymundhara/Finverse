@@ -307,7 +307,6 @@ function InputField({
           </span>
         )}
       </div>
-      <input
     </div>
   );
 }
