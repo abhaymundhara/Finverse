@@ -355,9 +355,9 @@ export default function FIRECalculator() {
               </div>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:col-span-2">
               <h3 className="text-xl font-bold mb-4">FAQs</h3>
-              <div className="space-y-2 text-sm text-white/80">
+              <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
                 {faqs.map((item) => (
                   <details
                     key={item.q}

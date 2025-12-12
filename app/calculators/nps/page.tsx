@@ -166,12 +166,12 @@ export default function NPSCalculator() {
               </p>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:col-span-2">
               <div className="flex items-center gap-3 mb-4">
                 <BarChart className="w-5 h-5 text-emerald-300" />
                 <h3 className="text-xl font-bold">FAQs</h3>
               </div>
-              <div className="space-y-2 text-sm text-white/80">
+              <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
                 {faqs.map((item) => (
                   <details
                     key={item.q}

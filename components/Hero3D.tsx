@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 export default function Hero3D() {
@@ -11,12 +12,16 @@ export default function Hero3D() {
         transition={{ duration: 0.8, delay: 0.2 }}
         className="relative z-10 max-w-4xl mx-auto"
       >
-        <h1 className="text-6xl md:text-8xl font-bold text-white tracking-tighter mb-6">
-          finverse
-          {/* <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">
-            Architecture.
-          </span> */}
-        </h1>
+        <div className="flex justify-center mb-6">
+          <Image
+            src="/logo/transparent_logo.png"
+            alt="Finverse"
+            width={1440}
+            height={1160}
+            priority
+            className="h-124 w-auto md:h-128"
+          />
+        </div>
 
         <p className="text-xl md:text-2xl text-white/60 max-w-2xl mx-auto mb-10 font-light tracking-wide">
           The operating system for your personal finance.
