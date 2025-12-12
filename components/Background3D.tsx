@@ -1,16 +1,13 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import {
-  Environment,
-  Float,
-} from "@react-three/drei";
+import { Environment, Float, useProgress } from "@react-three/drei";
 import * as THREE from "three";
 
 function FloatingShape() {
   const meshRef = useRef<THREE.Mesh>(null);
-  const materialRef = useRef<any>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
 
   // Target state refs for smooth lerping
   const targetPos = useRef(new THREE.Vector3(0, 0, 0));
@@ -102,11 +99,12 @@ function FloatingShape() {
       <mesh ref={meshRef} scale={1.05}>
         <torusKnotGeometry args={[1, 0.3, 48, 10]} />
         <meshStandardMaterial
-          color="#d1fae5"
-          roughness={0.4}
-          metalness={0.15}
-          emissive="#1f2937"
-          emissiveIntensity={0.2}
+          ref={materialRef}
+          color="#f5f7fb"
+          roughness={0.35}
+          metalness={0.25}
+          emissive="#0f172a"
+          emissiveIntensity={0.12}
         />
       </mesh>
     </Float>
@@ -114,16 +112,35 @@ function FloatingShape() {
 }
 
 export default function Background3D() {
+  const { progress } = useProgress();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (progress >= 100) {
+      const t = setTimeout(() => setReady(true), 100);
+      return () => clearTimeout(t);
+    }
+  }, [progress]);
+
   return (
     <div className="fixed inset-0 z-0 pointer-events-none">
+      {!ready && (
+        <div className="absolute inset-0 bg-black transition-opacity duration-500 opacity-80 flex items-center justify-center text-white text-xs uppercase tracking-[0.2em]">
+          Loading...
+        </div>
+      )}
       <Canvas
         camera={{ position: [0, 0, 5], fov: 45 }}
-        dpr={[1, 1.1]} // lower DPR for performance
+        dpr={[1, 1.05]} // lower DPR for performance
         gl={{ antialias: false }}
+        style={{
+          opacity: ready ? 1 : 0,
+          transition: "opacity 0.6s ease",
+        }}
       >
         <color attach="background" args={["#050505"]} />
         <ambientLight intensity={0.3} />
-        <directionalLight position={[3, 5, 2]} intensity={0.8} />
+        <directionalLight position={[3, 5, 2]} intensity={0.7} />
 
         <FloatingShape />
 
@@ -145,7 +162,7 @@ function Stars() {
 
   return (
     <group ref={group}>
-      {[...Array(20)].map((_, i) => (
+      {[...Array(12)].map((_, i) => (
         <mesh
           key={i}
           position={[
