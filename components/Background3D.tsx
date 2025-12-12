@@ -5,7 +5,6 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   Environment,
   Float,
-  MeshTransmissionMaterial,
 } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -100,23 +99,14 @@ function FloatingShape() {
 
   return (
     <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-      <mesh ref={meshRef} scale={1.1}>
-        <torusKnotGeometry args={[1, 0.3, 64, 12]} />
-        <MeshTransmissionMaterial
-          ref={materialRef}
-          backside={false}
-          samples={2}
-          resolution={256}
-          thickness={0.4}
-          roughness={0.15}
-          transmission={0.9}
-          ior={1.5}
-          chromaticAberration={0.03}
-          anisotropy={0.08}
-          distortion={0.15}
-          distortionScale={0.08}
-          temporalDistortion={0.08}
-          color="#ffffff"
+      <mesh ref={meshRef} scale={1.05}>
+        <torusKnotGeometry args={[1, 0.3, 48, 10]} />
+        <meshStandardMaterial
+          color="#d1fae5"
+          roughness={0.4}
+          metalness={0.15}
+          emissive="#1f2937"
+          emissiveIntensity={0.2}
         />
       </mesh>
     </Float>
@@ -128,13 +118,12 @@ export default function Background3D() {
     <div className="fixed inset-0 z-0 pointer-events-none">
       <Canvas
         camera={{ position: [0, 0, 5], fov: 45 }}
-        dpr={[1, 1.2]} // lower DPR for performance
+        dpr={[1, 1.1]} // lower DPR for performance
         gl={{ antialias: false }}
       >
         <color attach="background" args={["#050505"]} />
-        <Environment preset="city" />
-        <ambientLight intensity={0.35} />
-        <spotLight position={[10, 10, 10]} angle={0.12} penumbra={0.8} intensity={0.8} />
+        <ambientLight intensity={0.3} />
+        <directionalLight position={[3, 5, 2]} intensity={0.8} />
 
         <FloatingShape />
 
