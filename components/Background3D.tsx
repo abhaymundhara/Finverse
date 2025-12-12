@@ -85,12 +85,6 @@ function FloatingShape() {
     // Material Color Lerp
     if (materialRef.current) {
       materialRef.current.color.lerp(targetColor.current, lerpSpeed);
-      // Evolve distortion based on scroll
-      materialRef.current.distortion = THREE.MathUtils.lerp(
-        materialRef.current.distortion,
-        Math.min(progress * 0.2 + 0.1, 0.3),
-        lerpSpeed
-      );
     }
   });
 
