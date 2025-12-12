@@ -4,6 +4,13 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 
 export default function Hero3D() {
+  const scrollToTools = () => {
+    const el = document.getElementById("tools");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <section className="relative h-screen w-full overflow-hidden flex flex-col items-center justify-center text-center px-4">
       <motion.div
@@ -41,6 +48,7 @@ export default function Hero3D() {
             className="px-8 py-3 bg-transparent text-white font-medium rounded-full border border-white/20 hover:bg-white/10 transition-all duration-300"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            onClick={scrollToTools}
           >
             Explore Tools
           </motion.button>
