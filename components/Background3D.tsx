@@ -123,11 +123,29 @@ function FloatingShape() {
 
 export default function Background3D() {
   const [ready, setReady] = useState(false);
+  const [allowMotion, setAllowMotion] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 150); // brief delay to avoid flashes
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = () => setAllowMotion(!media.matches);
+    handleChange();
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
+
+  if (!allowMotion) {
+    return (
+      <div
+        className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-black via-slate-950 to-black"
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-0 pointer-events-none">

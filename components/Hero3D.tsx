@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 export default function Hero3D() {
@@ -12,7 +13,7 @@ export default function Hero3D() {
   };
 
   return (
-    <section className="relative h-screen w-full overflow-hidden flex flex-col items-center justify-center text-center px-4">
+    <section className="relative min-h-screen w-full overflow-hidden flex flex-col items-center justify-start text-center px-4 pt-24 pb-16 md:pt-32">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -24,46 +25,47 @@ export default function Hero3D() {
             src="/logo/transparent_logo.png"
             alt="Finverse"
             width={1440}
-            height={1160}
+            height={1060}
             priority
             className="w-full max-w-[280px] sm:max-w-[400px] md:max-w-[600px] lg:max-w-[800px] h-auto object-contain"
           />
         </div>
 
-        <p className="text-lg md:text-2xl text-white/60 max-w-2xl mx-auto mb-10 font-light tracking-wide px-4">
-          The operating system for your personal finance.
-          <br className="hidden md:block" />
-          Precision tools for the modern investor.
-        </p>
+        <h1 className="text-lg md:text-xl  font-light tracking-wide text-white leading-tight mb-4 px-4 max-w-3xl mx-auto text-balance">
+          SIP, FD, FIRE, NPS, IRR, net-worth and more calculators built for
+          precision and clarity.
+        </h1>
 
-        <div className="flex flex-col sm:flex-row gap-6 justify-center">
-          <motion.button
-            className="px-8 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-200 transition-all duration-300"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm uppercase tracking-wide text-white/60">
+          <span className="text-white/70">Popular:</span>
+          <Link
+            href="/calculators/sip"
+            className="rounded-full bg-white/5 px-4 py-2 text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
           >
-            Start Building
-          </motion.button>
-          <motion.button
-            className="px-8 py-3 bg-transparent text-white font-medium rounded-full border border-white/20 hover:bg-white/10 transition-all duration-300"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={scrollToTools}
+            SIP Calculator
+          </Link>
+          <Link
+            href="/calculators/fd"
+            className="rounded-full bg-white/5 px-4 py-2 text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
           >
-            Explore Tools
-          </motion.button>
+            FD Calculator
+          </Link>
+          <Link
+            href="/calculators/fire"
+            className="rounded-full bg-white/5 px-4 py-2 text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          >
+            FIRE Calculator
+          </Link>
+          <Link
+            href="/calculators/net-worth"
+            className="rounded-full bg-white/5 px-4 py-2 text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          >
+            Net Worth Planner
+          </Link>
         </div>
       </motion.div>
 
       {/* Scroll Indicator */}
-      <motion.div
-        className="absolute bottom-12 left-1/2 -translate-x-1/2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 1.5 }}
-      >
-        <div className="w-[1px] h-16 bg-gradient-to-b from-white/0 via-white/50 to-white/0" />
-      </motion.div>
     </section>
   );
 }

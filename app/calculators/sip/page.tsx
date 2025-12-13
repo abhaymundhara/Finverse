@@ -1,8 +1,32 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { PiggyBank, TrendingUp, DollarSign, Calendar } from "lucide-react";
+
+const relatedTools = [
+  {
+    href: "/calculators/goal-sip",
+    title: "Goal SIP Calculator",
+    description: "Find the monthly SIP needed for a future, inflation-adjusted goal.",
+  },
+  {
+    href: "/calculators/fd",
+    title: "FD Calculator",
+    description: "Compare lump-sum returns versus SIP growth to pick the right mix.",
+  },
+  {
+    href: "/calculators/net-worth",
+    title: "Net Worth Projection",
+    description: "Map how SIPs accelerate long-term wealth and net worth targets.",
+  },
+  {
+    href: "/calculators/irr",
+    title: "IRR Calculator",
+    description: "Gauge the internal rate of return for staggered investments.",
+  },
+];
 
 export default function SIPCalculator() {
   const [monthlyInvestment, setMonthlyInvestment] = useState(5000);
@@ -228,6 +252,44 @@ export default function SIPCalculator() {
             </div>
           </motion.div>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
+          className="mt-16 bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8"
+        >
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
+            <div>
+              <p className="text-sm uppercase tracking-wide text-emerald-300 mb-2">
+                Related calculators
+              </p>
+              <h2 className="text-2xl font-bold">
+                Plan the full journey around your SIP
+              </h2>
+              <p className="text-white/60">
+                Explore more tools for goal-based planning, fixed deposits, and portfolio growth.
+              </p>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {relatedTools.map((tool) => (
+              <Link
+                key={tool.href}
+                href={tool.href}
+                className="group rounded-2xl border border-white/10 bg-white/5 px-4 py-5 transition-colors hover:border-emerald-300/60 hover:bg-white/10"
+              >
+                <p className="text-sm font-semibold text-emerald-300 group-hover:text-white">
+                  {tool.title}
+                </p>
+                <p className="text-sm text-white/70 group-hover:text-white/90 mt-2">
+                  {tool.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </div>
   );
