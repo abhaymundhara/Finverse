@@ -2,6 +2,9 @@ import type { MetadataRoute } from "next";
 
 const baseUrl = "https://weneed.money";
 
+export const dynamic = "force-static";
+export const revalidate = 86400;
+
 const calculatorSlugs = [
   "fire",
   "goal-sip",
