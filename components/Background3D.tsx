@@ -41,27 +41,45 @@ function FloatingShape() {
     // 2. Define "Keyframes" based on progress
     // Hero (0.0 - 0.2) -> Calculators (0.2 - 0.5) -> Features (0.5 - 0.8) -> CTA (0.8 - 1.0)
 
+    const isMobile = viewport.width < 7;
+
     if (progress < 0.15) {
       // Hero: Center, Glassy White
       targetPos.current.set(0, 0, 0);
-      targetScale.current.set(1.2, 1.2, 1.2);
+      targetScale.current.set(
+        isMobile ? 0.8 : 1.2,
+        isMobile ? 0.8 : 1.2,
+        isMobile ? 0.8 : 1.2
+      );
       targetColor.current.set("#ffffff");
     } else if (progress < 0.45) {
-      // Calculators: Right side, Emerald Green
-      // Move to right (positive X)
-      targetPos.current.set(viewport.width / 5, 0, -1);
-      targetScale.current.set(0.9, 0.9, 0.9);
+      // Calculators: Right side (Desktop) / Top (Mobile), Emerald Green
+      if (isMobile) {
+        targetPos.current.set(0, 1.5, -2);
+        targetScale.current.set(0.6, 0.6, 0.6);
+      } else {
+        targetPos.current.set(viewport.width / 5, 0, -1);
+        targetScale.current.set(0.9, 0.9, 0.9);
+      }
       targetColor.current.set("#10b981"); // Emerald
     } else if (progress < 0.75) {
-      // Features: Left side, Blue/Purple
-      // Move to left (negative X)
-      targetPos.current.set(-viewport.width / 5, 0, -0.5);
-      targetScale.current.set(1.0, 1.0, 1.0);
+      // Features: Left side (Desktop) / Bottom (Mobile), Blue/Purple
+      if (isMobile) {
+        targetPos.current.set(0, -1.5, -2);
+        targetScale.current.set(0.6, 0.6, 0.6);
+      } else {
+        targetPos.current.set(-viewport.width / 5, 0, -0.5);
+        targetScale.current.set(1.0, 1.0, 1.0);
+      }
       targetColor.current.set("#3b82f6"); // Blue
     } else {
       // CTA: Center, Gold, Big
       targetPos.current.set(0, 0, 1.5);
-      targetScale.current.set(1.4, 1.4, 1.4);
+      targetScale.current.set(
+        isMobile ? 1.0 : 1.4,
+        isMobile ? 1.0 : 1.4,
+        isMobile ? 1.0 : 1.4
+      );
       targetColor.current.set("#fbbf24"); // Amber/Gold
     }
 

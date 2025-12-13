@@ -41,8 +41,8 @@ export default function Features() {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px]" />
 
       {/* Glowing orbs */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[120px]" />
+      <div className="absolute top-1/4 left-1/4 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-emerald-500/10 rounded-full blur-[80px] md:blur-[120px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-teal-500/10 rounded-full blur-[80px] md:blur-[120px]" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <motion.div
@@ -50,16 +50,16 @@ export default function Features() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-20"
+          className="text-center mb-12 md:mb-20"
         >
-          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 md:mb-6 leading-tight">
             Enterprise-Grade
             <br />
             <span className="bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 bg-clip-text text-transparent">
               Financial Tools
             </span>
           </h2>
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto px-4">
             Professional-grade technology designed for precision and
             insights(Coming Soon).
           </p>
@@ -75,7 +75,7 @@ export default function Features() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ scale: 1.05, y: -10 }}
+                whileHover={{ scale: 1.02, y: -5 }}
                 className="relative group cursor-pointer"
               >
                 <motion.div
@@ -83,9 +83,9 @@ export default function Features() {
                 />
 
                 <motion.div
-                  className="relative bg-white/5 backdrop-blur-sm border border-white/10 group-hover:border-white/20 p-10 rounded-3xl transition-all duration-500 overflow-hidden h-full"
+                  className="relative bg-white/5 backdrop-blur-sm border border-white/10 group-hover:border-white/20 p-6 md:p-10 rounded-3xl transition-all duration-500 overflow-hidden h-full"
                   whileHover={{
-                    y: -5,
+                    y: -2,
                   }}
                 >
                   <motion.div

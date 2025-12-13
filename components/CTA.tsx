@@ -52,7 +52,7 @@ export default function CTA() {
           />
 
           {/* Content */}
-          <div className="relative z-10 p-16 md:p-20 text-center">
+          <div className="relative z-10 p-8 md:p-20 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -66,7 +66,7 @@ export default function CTA() {
             </motion.div>
 
             <motion.h2
-              className="text-4xl md:text-6xl font-bold text-white mb-8 leading-tight"
+              className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-6 md:mb-8 leading-tight"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -80,7 +80,7 @@ export default function CTA() {
             </motion.h2>
 
             <motion.p
-              className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto leading-relaxed"
+              className="text-lg md:text-2xl text-white/90 mb-8 md:mb-12 max-w-3xl mx-auto leading-relaxed px-2"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -88,7 +88,7 @@ export default function CTA() {
             >
               Join the waitlist for early access to professional-grade financial
               planning tools.
-              <br />
+              <br className="hidden md:block" />
               Be among the first to experience the future of personal finance.
             </motion.p>
 

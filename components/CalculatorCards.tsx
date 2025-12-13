@@ -200,18 +200,18 @@ export default function CalculatorCards() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-12 md:mb-16"
         >
-          <h2 className="text-5xl md:text-6xl font-bold text-slate-900 dark:text-white mb-6 leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4 md:mb-6 leading-tight">
             Professional Financial
             <br />
             <span className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
               Calculators & Tools
             </span>
           </h2>
-          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto">
+          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto px-4">
             Enterprise-grade financial calculators powered by AI.
-            <br />
+            <br className="hidden md:block" />
             Used by professionals. Built for everyone.
           </p>
         </motion.div>
@@ -228,7 +228,7 @@ export default function CalculatorCards() {
               <Link key={index} href={calc.href}>
                 <motion.div
                   variants={cardVariants}
-                  whileHover={{ scale: 1.08, rotate: 2, y: -10 }}
+                  whileHover={{ scale: 1.03, rotate: 1, y: -5 }}
                   className="group relative cursor-pointer"
                 >
                   <motion.div
@@ -236,9 +236,9 @@ export default function CalculatorCards() {
                   />
 
                   <motion.div
-                    className="relative bg-white dark:bg-white/5 p-8 rounded-3xl shadow-sm hover:shadow-md transition-all duration-500 border border-slate-200 dark:border-white/10 group-hover:border-white/20 h-full overflow-hidden"
+                    className="relative bg-white dark:bg-white/5 p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-md transition-all duration-500 border border-slate-200 dark:border-white/10 group-hover:border-white/20 h-full overflow-hidden"
                     whileHover={{
-                      y: -5,
+                      y: -2,
                     }}
                   >
                     <div

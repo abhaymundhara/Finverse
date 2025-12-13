@@ -19,20 +19,20 @@ export default function Hero3D() {
         transition={{ duration: 0.8, delay: 0.2 }}
         className="relative z-10 max-w-4xl mx-auto"
       >
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-6 px-4">
           <Image
             src="/logo/transparent_logo.png"
             alt="Finverse"
             width={1440}
             height={1160}
             priority
-            className="h-124 w-auto md:h-128"
+            className="w-full max-w-[280px] sm:max-w-[400px] md:max-w-[600px] lg:max-w-[800px] h-auto object-contain"
           />
         </div>
 
-        <p className="text-xl md:text-2xl text-white/60 max-w-2xl mx-auto mb-10 font-light tracking-wide">
+        <p className="text-lg md:text-2xl text-white/60 max-w-2xl mx-auto mb-10 font-light tracking-wide px-4">
           The operating system for your personal finance.
-          <br />
+          <br className="hidden md:block" />
           Precision tools for the modern investor.
         </p>
 
