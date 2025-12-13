@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -66,14 +66,15 @@ function FloatingShape() {
     }
 
     // 3. Smoothly Interpolate (Lerp) current state to target state
-    const lerpSpeed = delta * 1.5; // Slightly slower for smoother motion
+    const clampedDelta = Math.min(delta, 0.1);
+    const lerpSpeed = clampedDelta * 1.5; // Slightly slower for smoother motion
 
     meshRef.current.position.lerp(targetPos.current, lerpSpeed);
     meshRef.current.scale.lerp(targetScale.current, lerpSpeed);
 
     // Rotation logic
-    meshRef.current.rotation.x += delta * 0.15;
-    meshRef.current.rotation.y += delta * 0.08;
+    meshRef.current.rotation.x += clampedDelta * 0.15;
+    meshRef.current.rotation.y += clampedDelta * 0.08;
     // Add scroll-based rotation torque
     meshRef.current.rotation.z = THREE.MathUtils.lerp(
       meshRef.current.rotation.z,
@@ -114,8 +115,8 @@ export default function Background3D() {
     <div className="fixed inset-0 z-0 pointer-events-none">
       <Canvas
         camera={{ position: [0, 0, 5], fov: 45 }}
-        dpr={[0.75, 1]} // lower DPR for performance
-        gl={{ antialias: false }}
+        dpr={[0.75, 1.5]} // Optimized DPR range
+        gl={{ antialias: false, powerPreference: "high-performance", alpha: true }}
         style={{
           opacity: ready ? 1 : 0,
           transition: "opacity 0.6s ease",
@@ -137,6 +138,18 @@ export default function Background3D() {
 function Stars() {
   const group = useRef<THREE.Group>(null);
 
+  // Stable random positions
+  const stars = useMemo(() => {
+    return [...Array(20)].map(() => ({
+      position: [
+        (Math.random() - 0.5) * 12,
+        (Math.random() - 0.5) * 12,
+        (Math.random() - 0.5) * 12,
+      ] as [number, number, number],
+      scale: 0.02 + Math.random() * 0.02,
+    }));
+  }, []);
+
   useFrame((state) => {
     if (group.current) {
       group.current.rotation.y = state.clock.getElapsedTime() * 0.05;
@@ -145,17 +158,9 @@ function Stars() {
 
   return (
     <group ref={group}>
-      {[...Array(12)].map((_, i) => (
-        <mesh
-          key={i}
-          position={[
-            (Math.random() - 0.5) * 10,
-            (Math.random() - 0.5) * 10,
-            (Math.random() - 0.5) * 10,
-          ]}
-          scale={0.02}
-        >
-          <sphereGeometry args={[1, 8, 8]} />
+      {stars.map((star, i) => (
+        <mesh key={i} position={star.position} scale={star.scale}>
+          <sphereGeometry args={[0.5, 8, 8]} />
           <meshBasicMaterial color="#4ade80" transparent opacity={0.6} />
         </mesh>
       ))}
