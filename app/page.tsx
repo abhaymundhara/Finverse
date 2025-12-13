@@ -2,7 +2,6 @@ import Hero3D from "@/components/Hero3D";
 import CalculatorCards from "@/components/CalculatorCards";
 import Features from "@/components/Features";
 import CTA from "@/components/CTA";
-import Footer from "@/components/Footer";
 import Background3D from "@/components/Background3D";
 
 export default function Home() {
@@ -14,7 +13,6 @@ export default function Home() {
         <CalculatorCards />
         <Features />
         <CTA />
-        <Footer />
       </div>
     </main>
   );

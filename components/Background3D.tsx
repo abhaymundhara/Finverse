@@ -2,7 +2,6 @@
 
 import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Float } from "@react-three/drei";
 import * as THREE from "three";
 
 function FloatingShape() {
@@ -89,19 +88,17 @@ function FloatingShape() {
   });
 
   return (
-    <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-      <mesh ref={meshRef} scale={1.05}>
-        <torusKnotGeometry args={[1, 0.3, 36, 8]} />
-        <meshStandardMaterial
-          ref={materialRef}
-          color="#c0c0c0"
-          roughness={0.3}
-          metalness={0.5}
-          emissive="#101010"
-          emissiveIntensity={0.05}
-        />
-      </mesh>
-    </Float>
+    <mesh ref={meshRef} scale={1.05}>
+      <torusKnotGeometry args={[1, 0.3, 24, 6]} />
+      <meshStandardMaterial
+        ref={materialRef}
+        color="#c0c0c0"
+        roughness={0.32}
+        metalness={0.45}
+        emissive="#101010"
+        emissiveIntensity={0.05}
+      />
+    </mesh>
   );
 }
 
@@ -117,7 +114,7 @@ export default function Background3D() {
     <div className="fixed inset-0 z-0 pointer-events-none">
       <Canvas
         camera={{ position: [0, 0, 5], fov: 45 }}
-        dpr={[0.9, 1]} // lower DPR for performance
+        dpr={[0.75, 1]} // lower DPR for performance
         gl={{ antialias: false }}
         style={{
           opacity: ready ? 1 : 0,
@@ -125,8 +122,8 @@ export default function Background3D() {
         }}
       >
         <color attach="background" args={["#050505"]} />
-        <ambientLight intensity={0.3} />
-        <directionalLight position={[3, 5, 2]} intensity={0.6} />
+        <ambientLight intensity={0.25} />
+        <directionalLight position={[3, 5, 2]} intensity={0.5} />
 
         <FloatingShape />
 

@@ -13,11 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Finverse | weneed.money",
+  title: "Finverse",
   description:
     "Finverse is the operating system for your personal finance with India-first calculators and tools.",
   icons: {
     icon: "/logo/transparent_logo.png",
+    shortcut: "/logo/transparent_logo.png",
     apple: "/logo/transparent_logo.png",
   },
 };
