@@ -116,7 +116,11 @@ export default function Background3D() {
       <Canvas
         camera={{ position: [0, 0, 5], fov: 45 }}
         dpr={[0.75, 1.5]} // Optimized DPR range
-        gl={{ antialias: false, powerPreference: "high-performance", alpha: true }}
+        gl={{
+          antialias: false,
+          powerPreference: "high-performance",
+          alpha: true,
+        }}
         style={{
           opacity: ready ? 1 : 0,
           transition: "opacity 0.6s ease",
