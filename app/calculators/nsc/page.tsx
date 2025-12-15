@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BadgeIndianRupee, Info } from "lucide-react";
+import StartNowVsWaitCard, {
+  type ProbabilityLevel,
+} from "@/components/StartNowVsWaitCard";
 
 export default function NSCCalculator() {
   const [investment, setInvestment] = useState(30000);
@@ -14,6 +17,74 @@ export default function NSCCalculator() {
   }, [investment, rate, years]);
 
   const interest = maturity - investment;
+
+  const WAIT_MONTHS = 12;
+  const RETURN_BUFFER_PCT = 2;
+  const monthsTotal = years * 12;
+
+  const startNowSeries = useMemo(() => {
+    return simulateLumpSumSeries({
+      principal: investment,
+      annualRate: rate,
+      monthsTotal,
+      delayMonths: 0,
+    });
+  }, [investment, monthsTotal, rate]);
+
+  const waitSeries = useMemo(() => {
+    return simulateLumpSumSeries({
+      principal: investment,
+      annualRate: rate,
+      monthsTotal,
+      delayMonths: WAIT_MONTHS,
+    });
+  }, [investment, monthsTotal, rate]);
+
+  const waitFinal = waitSeries.at(-1) || 0;
+  const costOfWaiting = Math.max(maturity - waitFinal, 0);
+
+  const extraIfWait = useMemo(() => {
+    if (monthsTotal < WAIT_MONTHS) return Number.POSITIVE_INFINITY;
+    const tYears = (monthsTotal - WAIT_MONTHS) / 12;
+    const factor = Math.pow(1 + rate / 100, tYears);
+    const required = factor > 0 ? maturity / factor : Number.POSITIVE_INFINITY;
+    return Math.max(required - investment, 0);
+  }, [investment, maturity, monthsTotal, rate]);
+
+  const lowRate = Math.max(rate - RETURN_BUFFER_PCT, 0);
+  const startLowFinal = useMemo(() => {
+    return (
+      simulateLumpSumSeries({
+        principal: investment,
+        annualRate: lowRate,
+        monthsTotal,
+        delayMonths: 0,
+      }).at(-1) || 0
+    );
+  }, [investment, lowRate, monthsTotal]);
+
+  const waitLowFinal = useMemo(() => {
+    return (
+      simulateLumpSumSeries({
+        principal: investment,
+        annualRate: lowRate,
+        monthsTotal,
+        delayMonths: WAIT_MONTHS,
+      }).at(-1) || 0
+    );
+  }, [investment, lowRate, monthsTotal]);
+
+  const probabilityStartNow = getProbabilityLevel({
+    targetAmount: maturity,
+    baseProjection: maturity,
+    lowProjection: startLowFinal,
+  });
+
+  const probabilityWait = getProbabilityLevel({
+    targetAmount: maturity,
+    baseProjection: waitFinal,
+    lowProjection: waitLowFinal,
+  });
 
   const faqs = [
     {
@@ -116,29 +187,119 @@ export default function NSCCalculator() {
                 for the first 4 years; the 5th year interest is taxable per slab.
               </p>
             </div>
-
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <Info className="w-5 h-5 text-amber-300" />
-                <h3 className="text-xl font-bold">FAQs</h3>
-              </div>
-              <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
-                {faqs.map((item) => (
-                  <details
-                    key={item.q}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
-                  >
-                    <summary className="cursor-pointer text-white">{item.q}</summary>
-                    <p className="mt-2 text-white/70">{item.a}</p>
-                  </details>
-                ))}
-              </div>
-            </div>
           </motion.div>
+        </div>
+
+        <div className="mt-10 space-y-6">
+          <StartNowVsWaitCard
+            theme={{ headerGradientClassName: "from-amber-400 to-yellow-500" }}
+            subtitle="Same NSC amount — just buying it 1 year later."
+            startNowSeries={startNowSeries}
+            waitSeries={waitSeries}
+            goalLine={{ label: "Start-now target", value: maturity }}
+            horizonLabels={{
+              start: "Today",
+              mid: `Year ${Math.floor(years / 2)}`,
+              end: `Year ${years}`,
+            }}
+            stats={[
+              {
+                label: "Cost of waiting",
+                value: `₹${Math.round(costOfWaiting).toLocaleString("en-IN")}`,
+                highlight: true,
+              },
+              {
+                label: "Extra deposit if you wait",
+                value: Number.isFinite(extraIfWait)
+                  ? `₹${Math.round(extraIfWait).toLocaleString("en-IN")}`
+                  : "Not possible",
+              },
+              {
+                label: "Target (start now)",
+                value: `₹${Math.round(maturity).toLocaleString("en-IN")}`,
+              },
+            ]}
+            probability={{
+              startNow: probabilityStartNow,
+              wait: probabilityWait,
+            }}
+            probabilityNote={`Rule-of-thumb: compares ${rate}% vs ${lowRate}% annual interest.`}
+            emailCapture={{
+              source: "nsc",
+              payload: {
+                investment,
+                rate,
+                years,
+                costOfWaiting: Math.round(costOfWaiting),
+                extraIfWait: Number.isFinite(extraIfWait)
+                  ? Math.round(extraIfWait)
+                  : "infinite",
+              },
+            }}
+          />
+
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Info className="w-5 h-5 text-amber-300" />
+              <h3 className="text-xl font-bold">FAQs</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
+              {faqs.map((item) => (
+                <details
+                  key={item.q}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                >
+                  <summary className="cursor-pointer text-white">{item.q}</summary>
+                  <p className="mt-2 text-white/70">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
+}
+
+function simulateLumpSumSeries({
+  principal,
+  annualRate,
+  monthsTotal,
+  delayMonths,
+}: {
+  principal: number;
+  annualRate: number;
+  monthsTotal: number;
+  delayMonths: number;
+}) {
+  const series: number[] = [];
+  const r = annualRate / 100;
+  const safeDelay = Math.max(delayMonths, 0);
+
+  for (let month = 0; month <= monthsTotal; month++) {
+    if (month < safeDelay) {
+      series.push(0);
+      continue;
+    }
+    const tYears = (month - safeDelay) / 12;
+    series.push(principal * Math.pow(1 + r, tYears));
+  }
+
+  return series;
+}
+
+function getProbabilityLevel({
+  targetAmount,
+  baseProjection,
+  lowProjection,
+}: {
+  targetAmount: number;
+  baseProjection: number;
+  lowProjection: number;
+}): ProbabilityLevel {
+  if (lowProjection >= targetAmount) return "high";
+  if (baseProjection >= targetAmount) return "medium";
+  return "low";
 }
 
 function InputField({

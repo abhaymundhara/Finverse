@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { DollarSign, TrendingUp, Calendar, Percent } from "lucide-react";
+import StartNowVsWaitCard, {
+  type ProbabilityLevel,
+} from "@/components/StartNowVsWaitCard";
 
 export default function FDCalculator() {
   const [principal, setPrincipal] = useState(100000);
@@ -35,6 +38,82 @@ export default function FDCalculator() {
   const effectiveReturn = ((maturityAmount / principal - 1) / t) * 100;
   const postTaxEffectiveReturn =
     ((postTaxMaturityAmount / principal - 1) / t) * 100;
+
+  const WAIT_MONTHS = 12;
+  const RETURN_BUFFER_PCT = 2;
+  const monthsTotal = Math.max(Math.round(timePeriod * 12), 0);
+
+  const startNowSeries = useMemo(() => {
+    return simulateLumpSumSeries({
+      principal,
+      annualRate: interestRate,
+      monthsTotal,
+      delayMonths: 0,
+      compoundsPerYear: n,
+    });
+  }, [interestRate, monthsTotal, n, principal]);
+
+  const waitSeries = useMemo(() => {
+    return simulateLumpSumSeries({
+      principal,
+      annualRate: interestRate,
+      monthsTotal,
+      delayMonths: WAIT_MONTHS,
+      compoundsPerYear: n,
+    });
+  }, [interestRate, monthsTotal, n, principal]);
+
+  const startNowFinal = startNowSeries.at(-1) || 0;
+  const waitFinal = waitSeries.at(-1) || 0;
+  const costOfWaiting = Math.max(startNowFinal - waitFinal, 0);
+
+  const extraDepositIfWait = useMemo(() => {
+    if (monthsTotal < WAIT_MONTHS) return Number.POSITIVE_INFINITY;
+    const waitGrowthFactor = compoundFactor({
+      annualRate: interestRate,
+      compoundsPerYear: n,
+      months: Math.max(monthsTotal - WAIT_MONTHS, 0),
+    });
+    const requiredPrincipal = maturityAmount / Math.max(waitGrowthFactor, 1);
+    return Math.max(requiredPrincipal - principal, 0);
+  }, [interestRate, maturityAmount, monthsTotal, n, principal]);
+
+  const lowRate = Math.max(interestRate - RETURN_BUFFER_PCT, 0);
+  const startNowFinalLow = useMemo(() => {
+    return (
+      simulateLumpSumSeries({
+        principal,
+        annualRate: lowRate,
+        monthsTotal,
+        delayMonths: 0,
+        compoundsPerYear: n,
+      }).at(-1) || 0
+    );
+  }, [lowRate, monthsTotal, n, principal]);
+
+  const waitFinalLow = useMemo(() => {
+    return (
+      simulateLumpSumSeries({
+        principal,
+        annualRate: lowRate,
+        monthsTotal,
+        delayMonths: WAIT_MONTHS,
+        compoundsPerYear: n,
+      }).at(-1) || 0
+    );
+  }, [lowRate, monthsTotal, n, principal]);
+
+  const probabilityStartNow = getProbabilityLevel({
+    targetAmount: maturityAmount,
+    baseProjection: maturityAmount,
+    lowProjection: startNowFinalLow,
+  });
+
+  const probabilityWait = getProbabilityLevel({
+    targetAmount: maturityAmount,
+    baseProjection: waitFinal,
+    lowProjection: waitFinalLow,
+  });
 
   return (
     <div className="min-h-screen px-4 py-12">
@@ -228,36 +307,151 @@ export default function FDCalculator() {
                 />
               </div>
             </div>
-
-            {/* Year-by-Year Growth */}
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <Calendar className="w-6 h-6 text-purple-400" />
-                <h3 className="text-xl font-bold">Year-by-Year Growth</h3>
-              </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {Array.from({ length: Math.ceil(timePeriod) }, (_, i) => {
-                  const year = i + 1;
-                  const amount = principal * Math.pow(1 + r / n, n * year);
-                  return (
-                    <div
-                      key={year}
-                      className="flex justify-between items-center py-2 border-b border-white/5"
-                    >
-                      <span className="text-white/60">Year {year}</span>
-                      <span className="font-semibold">
-                        ₹{Math.round(amount).toLocaleString("en-IN")}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </motion.div>
+        </div>
+
+        <div className="mt-10 space-y-6">
+          <StartNowVsWaitCard
+            theme={{
+              headerGradientClassName: "from-yellow-500 to-orange-500",
+            }}
+            subtitle="Same FD, same maturity date — just booking it 1 year later."
+            startNowSeries={startNowSeries}
+            waitSeries={waitSeries}
+            goalLine={{ label: "Start-now target", value: maturityAmount }}
+            horizonLabels={{
+              start: "Today",
+              mid: `Year ${Math.max(Math.floor(timePeriod / 2), 1)}`,
+              end: `Year ${timePeriod}`,
+            }}
+            stats={[
+              {
+                label: "Cost of waiting",
+                value: `₹${Math.round(costOfWaiting).toLocaleString("en-IN")}`,
+                highlight: true,
+              },
+              {
+                label: "Extra deposit if you wait",
+                value: Number.isFinite(extraDepositIfWait)
+                  ? `₹${Math.round(extraDepositIfWait).toLocaleString("en-IN")}`
+                  : "Not possible",
+              },
+              {
+                label: "Target (start now)",
+                value: `₹${Math.round(maturityAmount).toLocaleString("en-IN")}`,
+              },
+            ]}
+            probability={{
+              startNow: probabilityStartNow,
+              wait: probabilityWait,
+            }}
+            probabilityNote={`Rule-of-thumb: compares ${interestRate}% vs ${lowRate}% annual interest.`}
+            emailCapture={{
+              source: "fd",
+              payload: {
+                principal,
+                interestRate,
+                timePeriod,
+                compoundingFrequency,
+                taxRate,
+                costOfWaiting: Math.round(costOfWaiting),
+                extraDepositIfWait: Number.isFinite(extraDepositIfWait)
+                  ? Math.round(extraDepositIfWait)
+                  : "infinite",
+              },
+            }}
+          />
+
+          {/* Year-by-Year Growth */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <Calendar className="w-6 h-6 text-purple-400" />
+              <h3 className="text-xl font-bold">Year-by-Year Growth</h3>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {Array.from({ length: Math.ceil(timePeriod) }, (_, i) => {
+                const year = i + 1;
+                const amount = principal * Math.pow(1 + r / n, n * year);
+                return (
+                  <div
+                    key={year}
+                    className="flex justify-between items-center py-2 border-b border-white/5"
+                  >
+                    <span className="text-white/60">Year {year}</span>
+                    <span className="font-semibold">
+                      ₹{Math.round(amount).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
+}
+
+function compoundFactor({
+  annualRate,
+  compoundsPerYear,
+  months,
+}: {
+  annualRate: number;
+  compoundsPerYear: number;
+  months: number;
+}) {
+  const r = annualRate / 100;
+  const tYears = Math.max(months, 0) / 12;
+  if (tYears === 0) return 1;
+  return Math.pow(1 + r / compoundsPerYear, compoundsPerYear * tYears);
+}
+
+function simulateLumpSumSeries({
+  principal,
+  annualRate,
+  monthsTotal,
+  delayMonths,
+  compoundsPerYear,
+}: {
+  principal: number;
+  annualRate: number;
+  monthsTotal: number;
+  delayMonths: number;
+  compoundsPerYear: number;
+}) {
+  const series: number[] = [];
+  const safeDelay = Math.max(delayMonths, 0);
+
+  for (let month = 0; month <= monthsTotal; month++) {
+    if (month < safeDelay) {
+      series.push(0);
+      continue;
+    }
+    const investedMonths = month - safeDelay;
+    const factor = compoundFactor({
+      annualRate,
+      compoundsPerYear,
+      months: investedMonths,
+    });
+    series.push(principal * factor);
+  }
+
+  return series;
+}
+
+function getProbabilityLevel({
+  targetAmount,
+  baseProjection,
+  lowProjection,
+}: {
+  targetAmount: number;
+  baseProjection: number;
+  lowProjection: number;
+}): ProbabilityLevel {
+  if (lowProjection >= targetAmount) return "high";
+  if (baseProjection >= targetAmount) return "medium";
+  return "low";
 }
 
 function InputField({

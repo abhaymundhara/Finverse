@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { PiggyBank, TrendingUp, DollarSign, Calendar } from "lucide-react";
+import StartNowVsWaitCard, {
+  type ProbabilityLevel,
+} from "@/components/StartNowVsWaitCard";
 
 const relatedTools = [
   {
@@ -60,6 +63,87 @@ export default function SIPCalculator() {
 
   // Inflation-adjusted value
   const realValue = wealth / Math.pow(1 + inflationMonthlyRate, months);
+
+  const WAIT_MONTHS = 12;
+  const RETURN_BUFFER_PCT = 4;
+
+  const startNowSeries = useMemo(() => {
+    return simulateStepUpSipSeries({
+      initialMonthlyInvestment: monthlyInvestment,
+      monthlyRate,
+      monthsTotal: months,
+      delayMonths: 0,
+      stepUpPercentage,
+    });
+  }, [monthlyInvestment, monthlyRate, months, stepUpPercentage]);
+
+  const waitSeries = useMemo(() => {
+    return simulateStepUpSipSeries({
+      initialMonthlyInvestment: monthlyInvestment,
+      monthlyRate,
+      monthsTotal: months,
+      delayMonths: WAIT_MONTHS,
+      stepUpPercentage,
+    });
+  }, [monthlyInvestment, monthlyRate, months, stepUpPercentage]);
+
+  const startNowFinal = startNowSeries.at(-1) || 0;
+  const waitFinal = waitSeries.at(-1) || 0;
+  const costOfWaiting = Math.max(startNowFinal - waitFinal, 0);
+
+  const requiredInitialIfWait = useMemo(() => {
+    if (months <= WAIT_MONTHS) return Number.POSITIVE_INFINITY;
+    return findRequiredInitialForTarget({
+      target: startNowFinal,
+      monthlyRate,
+      monthsTotal: months,
+      delayMonths: WAIT_MONTHS,
+      stepUpPercentage,
+    });
+  }, [monthlyRate, months, startNowFinal, stepUpPercentage]);
+
+  const extraSipIfWait = Number.isFinite(requiredInitialIfWait)
+    ? Math.max(requiredInitialIfWait - monthlyInvestment, 0)
+    : Number.POSITIVE_INFINITY;
+
+  const lowReturn = Math.max(expectedReturn - RETURN_BUFFER_PCT, 0);
+  const lowMonthlyRate = lowReturn / 12 / 100;
+
+  const startNowFinalLow = useMemo(() => {
+    return (
+      simulateStepUpSipSeries({
+        initialMonthlyInvestment: monthlyInvestment,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: months,
+        delayMonths: 0,
+        stepUpPercentage,
+      }).at(-1) || 0
+    );
+  }, [lowMonthlyRate, monthlyInvestment, months, stepUpPercentage]);
+
+  const waitFinalLow = useMemo(() => {
+    return (
+      simulateStepUpSipSeries({
+        initialMonthlyInvestment: monthlyInvestment,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: months,
+        delayMonths: WAIT_MONTHS,
+        stepUpPercentage,
+      }).at(-1) || 0
+    );
+  }, [lowMonthlyRate, monthlyInvestment, months, stepUpPercentage]);
+
+  const probabilityStartNow = getProbabilityLevel({
+    targetAmount: startNowFinal,
+    baseProjection: startNowFinal,
+    lowProjection: startNowFinalLow,
+  });
+
+  const probabilityWait = getProbabilityLevel({
+    targetAmount: startNowFinal,
+    baseProjection: waitFinal,
+    lowProjection: waitFinalLow,
+  });
 
   return (
     <div className="min-h-screen px-4 py-12">
@@ -253,6 +337,59 @@ export default function SIPCalculator() {
           </motion.div>
         </div>
 
+        <div className="mt-10">
+          <StartNowVsWaitCard
+            theme={{
+              headerGradientClassName: "from-green-500 to-emerald-500",
+            }}
+            subtitle="Same SIP, same goal date — just delaying the first 12 installments."
+            startNowSeries={startNowSeries}
+            waitSeries={waitSeries}
+            goalLine={{ label: "Start-now target", value: startNowFinal }}
+            horizonLabels={{
+              start: "Today",
+              mid: `Year ${Math.floor(timePeriod / 2)}`,
+              end: `Year ${timePeriod}`,
+            }}
+            stats={[
+              {
+                label: "Cost of waiting",
+                value: `₹${Math.round(costOfWaiting).toLocaleString("en-IN")}`,
+                highlight: true,
+              },
+              {
+                label: "Extra SIP if you wait",
+                value: Number.isFinite(extraSipIfWait)
+                  ? `₹${Math.round(extraSipIfWait).toLocaleString("en-IN")}/mo`
+                  : "Not possible",
+              },
+              {
+                label: "Target (start now)",
+                value: `₹${Math.round(startNowFinal).toLocaleString("en-IN")}`,
+              },
+            ]}
+            probability={{
+              startNow: probabilityStartNow,
+              wait: probabilityWait,
+            }}
+            probabilityNote={`Rule-of-thumb: compares ${expectedReturn}% vs ${lowReturn}% annual returns.`}
+            emailCapture={{
+              source: "sip",
+              payload: {
+                monthlyInvestment,
+                expectedReturn,
+                timePeriod,
+                inflationRate,
+                stepUpPercentage,
+                costOfWaiting: Math.round(costOfWaiting),
+                extraSipIfWait: Number.isFinite(extraSipIfWait)
+                  ? Math.round(extraSipIfWait)
+                  : "infinite",
+              },
+            }}
+          />
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -293,6 +430,100 @@ export default function SIPCalculator() {
       </div>
     </div>
   );
+}
+
+function simulateStepUpSipSeries({
+  initialMonthlyInvestment,
+  monthlyRate,
+  monthsTotal,
+  delayMonths,
+  stepUpPercentage,
+}: {
+  initialMonthlyInvestment: number;
+  monthlyRate: number;
+  monthsTotal: number;
+  delayMonths: number;
+  stepUpPercentage: number;
+}) {
+  const series: number[] = [0];
+  let balance = 0;
+  let currentInvestment = initialMonthlyInvestment;
+  const safeDelayMonths = Math.max(delayMonths, 0);
+  const stepUpRate = stepUpPercentage / 100;
+
+  for (let month = 1; month <= monthsTotal; month++) {
+    if (month > safeDelayMonths) {
+      balance = (balance + currentInvestment) * (1 + monthlyRate);
+      if (stepUpPercentage > 0 && (month - safeDelayMonths) % 12 === 0) {
+        currentInvestment *= 1 + stepUpRate;
+      }
+    } else {
+      balance *= 1 + monthlyRate;
+    }
+    series.push(balance);
+  }
+
+  return series;
+}
+
+function findRequiredInitialForTarget({
+  target,
+  monthlyRate,
+  monthsTotal,
+  delayMonths,
+  stepUpPercentage,
+}: {
+  target: number;
+  monthlyRate: number;
+  monthsTotal: number;
+  delayMonths: number;
+  stepUpPercentage: number;
+}) {
+  if (!Number.isFinite(target) || target <= 0) return 0;
+  if (monthsTotal <= delayMonths) return Number.POSITIVE_INFINITY;
+
+  const project = (initial: number) => {
+    return (
+      simulateStepUpSipSeries({
+        initialMonthlyInvestment: initial,
+        monthlyRate,
+        monthsTotal,
+        delayMonths,
+        stepUpPercentage,
+      }).at(-1) || 0
+    );
+  };
+
+  let low = 0;
+  let high = Math.max(100, 2 * (target / Math.max(monthsTotal - delayMonths, 1)));
+
+  for (let i = 0; i < 40; i++) {
+    if (project(high) >= target) break;
+    high *= 2;
+    if (high > 1e9) return Number.POSITIVE_INFINITY;
+  }
+
+  for (let i = 0; i < 60; i++) {
+    const mid = (low + high) / 2;
+    if (project(mid) >= target) high = mid;
+    else low = mid;
+  }
+
+  return high;
+}
+
+function getProbabilityLevel({
+  targetAmount,
+  baseProjection,
+  lowProjection,
+}: {
+  targetAmount: number;
+  baseProjection: number;
+  lowProjection: number;
+}): ProbabilityLevel {
+  if (lowProjection >= targetAmount) return "high";
+  if (baseProjection >= targetAmount) return "medium";
+  return "low";
 }
 
 function InputField({

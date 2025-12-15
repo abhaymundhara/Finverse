@@ -1,9 +1,54 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export default function CTA() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "submitted" | "error" | "invalid"
+  >("idle");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const trimmed = email.trim();
+    if (!isValidEmail(trimmed)) {
+      setStatus("invalid");
+      return;
+    }
+
+    setStatus("submitting");
+
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: trimmed,
+          source: "waitlist",
+          path: "/",
+        }),
+      });
+
+      if (response.ok) {
+        setStatus("submitted");
+        setEmail("");
+      } else {
+        setStatus("error");
+      }
+    } catch (error) {
+      console.error("Subscription error:", error);
+      setStatus("error");
+    }
+  };
   return (
     <section className="py-32 px-4 bg-transparent relative overflow-hidden">
       {/* Animated particles */}
@@ -99,20 +144,60 @@ export default function CTA() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.5 }}
             >
-              <motion.input
-                type="email"
-                placeholder="Enter your email for VIP access"
-                className="px-8 py-5 rounded-full bg-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-yellow-400 min-w-[350px] text-lg font-semibold shadow-2xl"
-                whileFocus={{ scale: 1.02 }}
-              />
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-10 py-5 bg-slate-900 text-white font-semibold rounded-full hover:bg-slate-800 transition-colors duration-300 shadow-xl"
+              <form
+                onSubmit={handleSubmit}
+                className="flex flex-col sm:flex-row gap-6 w-full justify-center items-center"
               >
-                Join Waitlist
-              </motion.button>
+                <motion.input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setStatus("idle");
+                  }}
+                  placeholder="Enter your email for VIP access"
+                  className="px-8 py-5 rounded-full bg-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-yellow-400 min-w-[350px] text-lg font-semibold shadow-2xl"
+                  whileFocus={{ scale: 1.02 }}
+                />
+                <motion.button
+                  type="submit"
+                  disabled={status === "submitting"}
+                  whileHover={{ scale: status === "submitting" ? 1 : 1.02 }}
+                  whileTap={{ scale: status === "submitting" ? 1 : 0.98 }}
+                  className="px-10 py-5 bg-slate-900 text-white font-semibold rounded-full hover:bg-slate-800 transition-colors duration-300 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {status === "submitting" ? "Joining..." : "Join Waitlist"}
+                </motion.button>
+              </form>
             </motion.div>
+
+            {status === "invalid" && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-200 text-base mt-4"
+              >
+                Please enter a valid email address.
+              </motion.p>
+            )}
+            {status === "submitted" && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-emerald-200 text-base mt-4"
+              >
+                ✓ You're on the waitlist! We'll notify you when we launch.
+              </motion.p>
+            )}
+            {status === "error" && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-200 text-base mt-4"
+              >
+                Something went wrong. Please try again.
+              </motion.p>
+            )}
 
             <motion.p
               className="text-white/70 text-base mt-8"

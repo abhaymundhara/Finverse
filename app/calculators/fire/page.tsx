@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Target, TrendingUp, DollarSign, Sparkles } from "lucide-react";
+import StartNowVsWaitCard, {
+  type ProbabilityLevel,
+} from "@/components/StartNowVsWaitCard";
 
 type ProjectionPoint = { age: number; value: number };
 
@@ -94,6 +97,85 @@ export default function FIRECalculator() {
     }
     return points;
   }, [currentAge, currentSavings, monthlyContribution, monthlyRate, retirementAge]);
+
+  const WAIT_MONTHS = 12;
+  const RETURN_BUFFER_PCT = 4;
+
+  const startNowSeries = useMemo(() => {
+    return simulateMonthlyPlanSeries({
+      startingCorpus: currentSavings,
+      monthlyContribution,
+      monthlyRate,
+      monthsTotal: monthsToRetirement,
+      delayMonths: 0,
+    });
+  }, [currentSavings, monthlyContribution, monthlyRate, monthsToRetirement]);
+
+  const waitSeries = useMemo(() => {
+    return simulateMonthlyPlanSeries({
+      startingCorpus: currentSavings,
+      monthlyContribution,
+      monthlyRate,
+      monthsTotal: monthsToRetirement,
+      delayMonths: WAIT_MONTHS,
+    });
+  }, [currentSavings, monthlyContribution, monthlyRate, monthsToRetirement]);
+
+  const startNowFinal = startNowSeries.at(-1) || 0;
+  const waitFinal = waitSeries.at(-1) || 0;
+  const costOfWaiting = Math.max(startNowFinal - waitFinal, 0);
+
+  const extraIfWait = useMemo(() => {
+    const investMonths = monthsToRetirement - WAIT_MONTHS;
+    if (investMonths <= 0) return Number.POSITIVE_INFINITY;
+    const growthFactor = Math.pow(1 + monthlyRate, monthsToRetirement);
+    const numerator = startNowFinal - currentSavings * growthFactor;
+    if (numerator <= 0) return 0;
+    if (monthlyRate === 0) return Math.max(numerator / investMonths - monthlyContribution, 0);
+    const annuityFactor =
+      ((Math.pow(1 + monthlyRate, investMonths) - 1) / monthlyRate) *
+      (1 + monthlyRate);
+    const required = numerator / annuityFactor;
+    return Math.max(required - monthlyContribution, 0);
+  }, [currentSavings, monthlyContribution, monthlyRate, monthsToRetirement, startNowFinal]);
+
+  const lowReturn = Math.max(expectedReturn - RETURN_BUFFER_PCT, 0);
+  const lowMonthlyRate = lowReturn / 12 / 100;
+  const startLowFinal = useMemo(() => {
+    return (
+      simulateMonthlyPlanSeries({
+        startingCorpus: currentSavings,
+        monthlyContribution,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: monthsToRetirement,
+        delayMonths: 0,
+      }).at(-1) || 0
+    );
+  }, [currentSavings, monthlyContribution, lowMonthlyRate, monthsToRetirement]);
+
+  const waitLowFinal = useMemo(() => {
+    return (
+      simulateMonthlyPlanSeries({
+        startingCorpus: currentSavings,
+        monthlyContribution,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: monthsToRetirement,
+        delayMonths: WAIT_MONTHS,
+      }).at(-1) || 0
+    );
+  }, [currentSavings, monthlyContribution, lowMonthlyRate, monthsToRetirement]);
+
+  const probabilityStartNow = getProbabilityLevel({
+    targetAmount: startNowFinal,
+    baseProjection: startNowFinal,
+    lowProjection: startLowFinal,
+  });
+
+  const probabilityWait = getProbabilityLevel({
+    targetAmount: startNowFinal,
+    baseProjection: waitFinal,
+    lowProjection: waitLowFinal,
+  });
 
   const faqs = [
     {
@@ -354,26 +436,120 @@ export default function FIRECalculator() {
                 })}
               </div>
             </div>
-
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:col-span-2">
-              <h3 className="text-xl font-bold mb-4">FAQs</h3>
-              <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
-                {faqs.map((item) => (
-                  <details
-                    key={item.q}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
-                  >
-                    <summary className="cursor-pointer text-white">{item.q}</summary>
-                    <p className="mt-2 text-white/70">{item.a}</p>
-                  </details>
-                ))}
-              </div>
-            </div>
           </motion.div>
+        </div>
+
+        <div className="mt-10 space-y-6">
+          <StartNowVsWaitCard
+            theme={{ headerGradientClassName: "from-orange-500 to-amber-400" }}
+            subtitle="Same contribution plan — just skipping the first 12 months."
+            startNowSeries={startNowSeries}
+            waitSeries={waitSeries}
+            goalLine={{ label: "Start-now target", value: startNowFinal }}
+            horizonLabels={{
+              start: `Age ${currentAge}`,
+              mid: `Age ${Math.floor((currentAge + retirementAge) / 2)}`,
+              end: `Age ${retirementAge}`,
+            }}
+            stats={[
+              {
+                label: "Cost of waiting",
+                value: `₹${Math.round(costOfWaiting).toLocaleString("en-IN")}`,
+                highlight: true,
+              },
+              {
+                label: "Extra SIP if you wait",
+                value: Number.isFinite(extraIfWait)
+                  ? `₹${Math.round(extraIfWait).toLocaleString("en-IN")}/mo`
+                  : "Not possible",
+              },
+              {
+                label: "Target (start now)",
+                value: `₹${Math.round(startNowFinal).toLocaleString("en-IN")}`,
+              },
+            ]}
+            probability={{
+              startNow: probabilityStartNow,
+              wait: probabilityWait,
+            }}
+            probabilityNote={`Rule-of-thumb: compares ${expectedReturn}% vs ${lowReturn}% annual returns.`}
+            emailCapture={{
+              source: "fire",
+              payload: {
+                monthlyExpense,
+                currentAge,
+                retirementAge,
+                inflationRate,
+                expectedReturn,
+                withdrawalRate,
+                currentSavings,
+                monthlyContribution,
+                costOfWaiting: Math.round(costOfWaiting),
+                extraIfWait: Number.isFinite(extraIfWait)
+                  ? Math.round(extraIfWait)
+                  : "infinite",
+              },
+            }}
+          />
+
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <h3 className="text-xl font-bold mb-4">FAQs</h3>
+            <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
+              {faqs.map((item) => (
+                <details
+                  key={item.q}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                >
+                  <summary className="cursor-pointer text-white">{item.q}</summary>
+                  <p className="mt-2 text-white/70">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
+}
+
+function simulateMonthlyPlanSeries({
+  startingCorpus,
+  monthlyContribution,
+  monthlyRate,
+  monthsTotal,
+  delayMonths,
+}: {
+  startingCorpus: number;
+  monthlyContribution: number;
+  monthlyRate: number;
+  monthsTotal: number;
+  delayMonths: number;
+}) {
+  const series: number[] = [startingCorpus];
+  let balance = startingCorpus;
+  const safeDelay = Math.max(delayMonths, 0);
+
+  for (let month = 1; month <= monthsTotal; month++) {
+    if (month > safeDelay) balance = (balance + monthlyContribution) * (1 + monthlyRate);
+    else balance *= 1 + monthlyRate;
+    series.push(balance);
+  }
+
+  return series;
+}
+
+function getProbabilityLevel({
+  targetAmount,
+  baseProjection,
+  lowProjection,
+}: {
+  targetAmount: number;
+  baseProjection: number;
+  lowProjection: number;
+}): ProbabilityLevel {
+  if (lowProjection >= targetAmount) return "high";
+  if (baseProjection >= targetAmount) return "medium";
+  return "low";
 }
 
 function InputField({

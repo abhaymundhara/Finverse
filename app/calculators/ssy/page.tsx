@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Info } from "lucide-react";
+import StartNowVsWaitCard, {
+  type ProbabilityLevel,
+} from "@/components/StartNowVsWaitCard";
 
 export default function SSYCalculator() {
   const [startYear, setStartYear] = useState(2025);
@@ -27,6 +30,77 @@ export default function SSYCalculator() {
 
   const totalInvestment = yearlyInvestment * depositYears;
   const totalInterest = maturityValue - totalInvestment;
+
+  const RETURN_BUFFER_PCT = 2;
+  const waitSeries = useMemo(() => {
+    return simulateYearlySeries({
+      yearlyInvestment,
+      annualRate: rate,
+      totalYears: maturityYears,
+      depositYears,
+      delayYears: 1,
+    });
+  }, [rate, yearlyInvestment]);
+
+  const startNowSeries = useMemo(() => {
+    return simulateYearlySeries({
+      yearlyInvestment,
+      annualRate: rate,
+      totalYears: maturityYears,
+      depositYears,
+      delayYears: 0,
+    });
+  }, [rate, yearlyInvestment]);
+
+  const startNowFinal = startNowSeries.at(-1) || 0;
+  const waitFinal = waitSeries.at(-1) || 0;
+  const costOfWaiting = Math.max(startNowFinal - waitFinal, 0);
+
+  const extraIfWait = useMemo(() => {
+    const r = rate / 100;
+    if (r === 0) return 0;
+    const factorDeposits = ((Math.pow(1 + r, depositYears) - 1) / r) * Math.pow(1 + r, maturityYears - (depositYears + 1));
+    if (factorDeposits <= 0) return Number.POSITIVE_INFINITY;
+    const required = startNowFinal / factorDeposits;
+    return Math.max(required - yearlyInvestment, 0);
+  }, [rate, startNowFinal, yearlyInvestment]);
+
+  const lowRate = Math.max(rate - RETURN_BUFFER_PCT, 0);
+  const startLowFinal = useMemo(() => {
+    return (
+      simulateYearlySeries({
+        yearlyInvestment,
+        annualRate: lowRate,
+        totalYears: maturityYears,
+        depositYears,
+        delayYears: 0,
+      }).at(-1) || 0
+    );
+  }, [lowRate, yearlyInvestment]);
+
+  const waitLowFinal = useMemo(() => {
+    return (
+      simulateYearlySeries({
+        yearlyInvestment,
+        annualRate: lowRate,
+        totalYears: maturityYears,
+        depositYears,
+        delayYears: 1,
+      }).at(-1) || 0
+    );
+  }, [lowRate, yearlyInvestment]);
+
+  const probabilityStartNow = getProbabilityLevel({
+    targetAmount: startNowFinal,
+    baseProjection: startNowFinal,
+    lowProjection: startLowFinal,
+  });
+
+  const probabilityWait = getProbabilityLevel({
+    targetAmount: startNowFinal,
+    baseProjection: waitFinal,
+    lowProjection: waitLowFinal,
+  });
 
   const faqs = [
     {
@@ -134,29 +208,122 @@ export default function SSYCalculator() {
                 after age 18 for education/marriage.
               </p>
             </div>
-
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <Info className="w-5 h-5 text-pink-300" />
-                <h3 className="text-xl font-bold">FAQs</h3>
-              </div>
-              <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
-                {faqs.map((item) => (
-                  <details
-                    key={item.q}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
-                  >
-                    <summary className="cursor-pointer text-white">{item.q}</summary>
-                    <p className="mt-2 text-white/70">{item.a}</p>
-                  </details>
-                ))}
-              </div>
-            </div>
           </motion.div>
+        </div>
+
+        <div className="mt-10 space-y-6">
+          <StartNowVsWaitCard
+            theme={{ headerGradientClassName: "from-pink-500 to-rose-500" }}
+            subtitle="Same yearly deposit plan — just starting 1 year later (with the same goal year)."
+            startNowSeries={startNowSeries}
+            waitSeries={waitSeries}
+            goalLine={{ label: "Start-now target", value: startNowFinal }}
+            horizonLabels={{
+              start: "Year 0",
+              mid: "Year 10",
+              end: `Year ${maturityYears}`,
+            }}
+            stats={[
+              {
+                label: "Cost of waiting",
+                value: `₹${Math.round(costOfWaiting).toLocaleString("en-IN")}`,
+                highlight: true,
+              },
+              {
+                label: "Extra yearly deposit if you wait",
+                value: Number.isFinite(extraIfWait)
+                  ? `₹${Math.round(extraIfWait).toLocaleString("en-IN")}/yr`
+                  : "Not possible",
+              },
+              {
+                label: "Target (start now)",
+                value: `₹${Math.round(startNowFinal).toLocaleString("en-IN")}`,
+              },
+            ]}
+            probability={{
+              startNow: probabilityStartNow,
+              wait: probabilityWait,
+            }}
+            probabilityNote={`Rule-of-thumb: compares ${rate}% vs ${lowRate}% annual interest.`}
+            emailCapture={{
+              source: "ssy",
+              payload: {
+                startYear,
+                yearlyInvestment,
+                rate,
+                maturityYear,
+                costOfWaiting: Math.round(costOfWaiting),
+                extraIfWait: Number.isFinite(extraIfWait)
+                  ? Math.round(extraIfWait)
+                  : "infinite",
+              },
+            }}
+          />
+
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Info className="w-5 h-5 text-pink-300" />
+              <h3 className="text-xl font-bold">FAQs</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
+              {faqs.map((item) => (
+                <details
+                  key={item.q}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                >
+                  <summary className="cursor-pointer text-white">{item.q}</summary>
+                  <p className="mt-2 text-white/70">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
+}
+
+function simulateYearlySeries({
+  yearlyInvestment,
+  annualRate,
+  totalYears,
+  depositYears,
+  delayYears,
+}: {
+  yearlyInvestment: number;
+  annualRate: number;
+  totalYears: number;
+  depositYears: number;
+  delayYears: number;
+}) {
+  const series: number[] = [0];
+  const r = annualRate / 100;
+  let balance = 0;
+  const safeDelayYears = Math.max(delayYears, 0);
+
+  for (let year = 1; year <= totalYears; year++) {
+    balance *= 1 + r;
+    if (year > safeDelayYears && year <= safeDelayYears + depositYears) {
+      balance += yearlyInvestment;
+    }
+    series.push(balance);
+  }
+
+  return series;
+}
+
+function getProbabilityLevel({
+  targetAmount,
+  baseProjection,
+  lowProjection,
+}: {
+  targetAmount: number;
+  baseProjection: number;
+  lowProjection: number;
+}): ProbabilityLevel {
+  if (lowProjection >= targetAmount) return "high";
+  if (baseProjection >= targetAmount) return "medium";
+  return "low";
 }
 
 function InputField({

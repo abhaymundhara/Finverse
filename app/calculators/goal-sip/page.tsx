@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Target, Info } from "lucide-react";
+import StartNowVsWaitCard, {
+  type ProbabilityLevel,
+} from "@/components/StartNowVsWaitCard";
 
 export default function GoalSIPCalculator() {
   const [goalToday, setGoalToday] = useState(1000000);
@@ -20,6 +23,79 @@ export default function GoalSIPCalculator() {
       ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) * (1 + monthlyRate);
     return futureCost / factor;
   }, [futureCost, months, monthlyRate]);
+
+  const WAIT_MONTHS = 12;
+  const RETURN_BUFFER_PCT = 4;
+
+  const startNowSeries = useMemo(() => {
+    return simulateMonthlySipSeries({
+      monthlyInvestment: requiredSip,
+      monthlyRate,
+      monthsTotal: months,
+      delayMonths: 0,
+    });
+  }, [monthlyRate, months, requiredSip]);
+
+  const waitSeries = useMemo(() => {
+    return simulateMonthlySipSeries({
+      monthlyInvestment: requiredSip,
+      monthlyRate,
+      monthsTotal: months,
+      delayMonths: WAIT_MONTHS,
+    });
+  }, [monthlyRate, months, requiredSip]);
+
+  const waitFinal = waitSeries.at(-1) || 0;
+  const costOfWaiting = Math.max(futureCost - waitFinal, 0);
+
+  const requiredSipIfWait = useMemo(() => {
+    return computeRequiredSip({
+      targetAmount: futureCost,
+      monthlyRate,
+      months: Math.max(months - WAIT_MONTHS, 0),
+    });
+  }, [futureCost, monthlyRate, months]);
+
+  const extraSipIfWait = Number.isFinite(requiredSipIfWait)
+    ? Math.max(requiredSipIfWait - requiredSip, 0)
+    : Number.POSITIVE_INFINITY;
+
+  const lowReturn = Math.max(annualReturn - RETURN_BUFFER_PCT, 0);
+  const lowMonthlyRate = lowReturn / 12 / 100;
+
+  const startNowFinalLow = useMemo(() => {
+    return (
+      simulateMonthlySipSeries({
+        monthlyInvestment: requiredSip,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: months,
+        delayMonths: 0,
+      }).at(-1) || 0
+    );
+  }, [lowMonthlyRate, months, requiredSip]);
+
+  const waitFinalLow = useMemo(() => {
+    return (
+      simulateMonthlySipSeries({
+        monthlyInvestment: requiredSip,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: months,
+        delayMonths: WAIT_MONTHS,
+      }).at(-1) || 0
+    );
+  }, [lowMonthlyRate, months, requiredSip]);
+
+  const probabilityStartNow = getProbabilityLevel({
+    targetAmount: futureCost,
+    baseProjection: futureCost,
+    lowProjection: startNowFinalLow,
+  });
+
+  const probabilityWait = getProbabilityLevel({
+    targetAmount: futureCost,
+    baseProjection: waitFinal,
+    lowProjection: waitFinalLow,
+  });
 
   const totalInvested = requiredSip * months;
   const returns = futureCost - totalInvested;
@@ -131,29 +207,137 @@ export default function GoalSIPCalculator() {
                 This calculator shows a flat SIP for simplicity.
               </p>
             </div>
-
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <Info className="w-5 h-5 text-green-300" />
-                <h3 className="text-xl font-bold">FAQs</h3>
-              </div>
-              <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
-                {faqs.map((item) => (
-                  <details
-                    key={item.q}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
-                  >
-                    <summary className="cursor-pointer text-white">{item.q}</summary>
-                    <p className="mt-2 text-white/70">{item.a}</p>
-                  </details>
-                ))}
-              </div>
-            </div>
           </motion.div>
+        </div>
+
+        <div className="mt-10 space-y-6">
+          <StartNowVsWaitCard
+            theme={{ headerGradientClassName: "from-green-500 to-teal-500" }}
+            subtitle="Same goal date — delaying means fewer installments."
+            startNowSeries={startNowSeries}
+            waitSeries={waitSeries}
+            goalLine={{ label: "Goal", value: futureCost }}
+            horizonLabels={{
+              start: "Today",
+              mid: `Year ${Math.floor(years / 2)}`,
+              end: `Year ${years}`,
+            }}
+            stats={[
+              {
+                label: "Cost of waiting",
+                value: `₹${Math.round(costOfWaiting).toLocaleString("en-IN")}`,
+                highlight: true,
+              },
+              {
+                label: "Extra SIP if you wait",
+                value: Number.isFinite(extraSipIfWait)
+                  ? `₹${Math.round(extraSipIfWait).toLocaleString("en-IN")}/mo`
+                  : "Not possible",
+              },
+              {
+                label: "Goal (inflation adj.)",
+                value: `₹${Math.round(futureCost).toLocaleString("en-IN")}`,
+              },
+            ]}
+            probability={{
+              startNow: probabilityStartNow,
+              wait: probabilityWait,
+            }}
+            probabilityNote={`Rule-of-thumb: compares ${annualReturn}% vs ${lowReturn}% annual returns.`}
+            emailCapture={{
+              source: "goal-sip",
+              payload: {
+                goalToday,
+                annualReturn,
+                inflation,
+                years,
+                requiredSip: Math.round(requiredSip),
+                requiredSipIfWait: Number.isFinite(requiredSipIfWait)
+                  ? Math.round(requiredSipIfWait)
+                  : "infinite",
+                costOfWaiting: Math.round(costOfWaiting),
+              },
+            }}
+          />
+
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Info className="w-5 h-5 text-green-300" />
+              <h3 className="text-xl font-bold">FAQs</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
+              {faqs.map((item) => (
+                <details
+                  key={item.q}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                >
+                  <summary className="cursor-pointer text-white">{item.q}</summary>
+                  <p className="mt-2 text-white/70">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
+}
+
+function computeRequiredSip({
+  targetAmount,
+  monthlyRate,
+  months,
+}: {
+  targetAmount: number;
+  monthlyRate: number;
+  months: number;
+}) {
+  if (months <= 0) return Number.POSITIVE_INFINITY;
+  if (monthlyRate === 0) return targetAmount / months;
+  const factor =
+    ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) * (1 + monthlyRate);
+  return targetAmount / factor;
+}
+
+function simulateMonthlySipSeries({
+  monthlyInvestment,
+  monthlyRate,
+  monthsTotal,
+  delayMonths,
+}: {
+  monthlyInvestment: number;
+  monthlyRate: number;
+  monthsTotal: number;
+  delayMonths: number;
+}) {
+  const series: number[] = [0];
+  let balance = 0;
+  const safeDelayMonths = Math.max(delayMonths, 0);
+
+  for (let month = 1; month <= monthsTotal; month++) {
+    if (month > safeDelayMonths) {
+      balance = (balance + monthlyInvestment) * (1 + monthlyRate);
+    } else {
+      balance *= 1 + monthlyRate;
+    }
+    series.push(balance);
+  }
+
+  return series;
+}
+
+function getProbabilityLevel({
+  targetAmount,
+  baseProjection,
+  lowProjection,
+}: {
+  targetAmount: number;
+  baseProjection: number;
+  lowProjection: number;
+}): ProbabilityLevel {
+  if (lowProjection >= targetAmount) return "high";
+  if (baseProjection >= targetAmount) return "medium";
+  return "low";
 }
 
 function InputField({

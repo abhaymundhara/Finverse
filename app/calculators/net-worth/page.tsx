@@ -3,6 +3,9 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { LineChart, TrendingUp, Calendar, DollarSign } from "lucide-react";
+import StartNowVsWaitCard, {
+  type ProbabilityLevel,
+} from "@/components/StartNowVsWaitCard";
 
 export default function NetWorthProjection() {
   const [currentAge, setCurrentAge] = useState(30);
@@ -43,6 +46,86 @@ export default function NetWorthProjection() {
     ((1 + expectedReturn / 100) / (1 + inflationRate / 100) - 1) * 100;
 
   const maxNetWorth = Math.max(...projectionData.map((d) => d.netWorth));
+
+  const WAIT_YEARS = 1;
+  const RETURN_BUFFER_PCT = 4;
+
+  const startNowSeries = useMemo(() => {
+    return simulateNetWorthSeries({
+      startingNetWorth: currentNetWorth,
+      annualContribution,
+      realReturn,
+      years: projectionYears,
+      delayYears: 0,
+    });
+  }, [annualContribution, currentNetWorth, projectionYears, realReturn]);
+
+  const waitSeries = useMemo(() => {
+    return simulateNetWorthSeries({
+      startingNetWorth: currentNetWorth,
+      annualContribution,
+      realReturn,
+      years: projectionYears,
+      delayYears: WAIT_YEARS,
+    });
+  }, [annualContribution, currentNetWorth, projectionYears, realReturn]);
+
+  const target = startNowSeries.at(-1) || 0;
+  const waitFinal = waitSeries.at(-1) || 0;
+  const costOfWaiting = Math.max(target - waitFinal, 0);
+
+  const extraIfWait = useMemo(() => {
+    const investYears = projectionYears - WAIT_YEARS;
+    if (investYears <= 0) return Number.POSITIVE_INFINITY;
+    const r = realReturn / 100;
+    const pvGrowth = currentNetWorth * Math.pow(1 + r, projectionYears);
+    const numerator = target - pvGrowth;
+    if (numerator <= 0) return 0;
+    if (r === 0) return Math.max(numerator / investYears - annualContribution, 0);
+    const factor = (Math.pow(1 + r, investYears) - 1) / r;
+    const required = numerator / factor;
+    return Math.max(required - annualContribution, 0);
+  }, [annualContribution, currentNetWorth, projectionYears, realReturn, target]);
+
+  const lowExpectedReturn = Math.max(expectedReturn - RETURN_BUFFER_PCT, 0);
+  const lowRealReturn =
+    ((1 + lowExpectedReturn / 100) / (1 + inflationRate / 100) - 1) * 100;
+
+  const startLowFinal = useMemo(() => {
+    return (
+      simulateNetWorthSeries({
+        startingNetWorth: currentNetWorth,
+        annualContribution,
+        realReturn: lowRealReturn,
+        years: projectionYears,
+        delayYears: 0,
+      }).at(-1) || 0
+    );
+  }, [annualContribution, currentNetWorth, lowRealReturn, projectionYears]);
+
+  const waitLowFinal = useMemo(() => {
+    return (
+      simulateNetWorthSeries({
+        startingNetWorth: currentNetWorth,
+        annualContribution,
+        realReturn: lowRealReturn,
+        years: projectionYears,
+        delayYears: WAIT_YEARS,
+      }).at(-1) || 0
+    );
+  }, [annualContribution, currentNetWorth, lowRealReturn, projectionYears]);
+
+  const probabilityStartNow = getProbabilityLevel({
+    targetAmount: target,
+    baseProjection: target,
+    lowProjection: startLowFinal,
+  });
+
+  const probabilityWait = getProbabilityLevel({
+    targetAmount: target,
+    baseProjection: waitFinal,
+    lowProjection: waitLowFinal,
+  });
 
   return (
     <div className="min-h-screen px-4 py-12">
@@ -262,45 +345,138 @@ export default function NetWorthProjection() {
                 </div>
               </div>
             </div>
-
-            {/* Milestones */}
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <Calendar className="w-6 h-6 text-emerald-400" />
-                <h3 className="text-xl font-bold">Milestones</h3>
-              </div>
-              <div className="space-y-3">
-                {[100000, 250000, 500000, 1000000, 2000000].map((milestone) => {
-                  const milestoneYear = projectionData.find(
-                    (d) => d.netWorth >= milestone
-                  );
-                  if (
-                    milestoneYear &&
-                    milestoneYear.year <= currentAge + projectionYears
-                  ) {
-                    return (
-                      <div
-                        key={milestone}
-                        className="flex justify-between items-center py-2 border-b border-white/5"
-                      >
-                        <span className="text-white/80">
-                          ${(milestone / 1000).toLocaleString()}k
-                        </span>
-                        <span className="text-emerald-400 font-semibold">
-                          Age {milestoneYear.year}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-            </div>
           </motion.div>
+        </div>
+
+        <div className="mt-10 space-y-6">
+          <StartNowVsWaitCard
+            theme={{ headerGradientClassName: "from-purple-500 to-pink-500" }}
+            subtitle="Same contribution plan — just skipping the first year."
+            startNowSeries={startNowSeries}
+            waitSeries={waitSeries}
+            goalLine={{ label: "Start-now target", value: target }}
+            horizonLabels={{
+              start: `Age ${currentAge}`,
+              mid: `Age ${currentAge + Math.floor(projectionYears / 2)}`,
+              end: `Age ${currentAge + projectionYears}`,
+            }}
+            stats={[
+              {
+                label: "Cost of waiting",
+                value: `$${Math.round(costOfWaiting).toLocaleString()}`,
+                highlight: true,
+              },
+              {
+                label: "Extra contribution if you wait",
+                value: Number.isFinite(extraIfWait)
+                  ? `$${Math.round(extraIfWait).toLocaleString()}/yr`
+                  : "Not possible",
+              },
+              {
+                label: "Target (start now)",
+                value: `$${Math.round(target).toLocaleString()}`,
+              },
+            ]}
+            probability={{
+              startNow: probabilityStartNow,
+              wait: probabilityWait,
+            }}
+            probabilityNote={`Rule-of-thumb: compares ${expectedReturn}% vs ${lowExpectedReturn}% expected returns.`}
+            emailCapture={{
+              source: "net-worth",
+              payload: {
+                currentAge,
+                currentNetWorth,
+                annualContribution,
+                expectedReturn,
+                inflationRate,
+                projectionYears,
+                costOfWaiting: Math.round(costOfWaiting),
+                extraIfWait: Number.isFinite(extraIfWait)
+                  ? Math.round(extraIfWait)
+                  : "infinite",
+              },
+            }}
+          />
+
+          {/* Milestones */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <Calendar className="w-6 h-6 text-emerald-400" />
+              <h3 className="text-xl font-bold">Milestones</h3>
+            </div>
+            <div className="space-y-3">
+              {[100000, 250000, 500000, 1000000, 2000000].map((milestone) => {
+                const milestoneYear = projectionData.find(
+                  (d) => d.netWorth >= milestone
+                );
+                if (
+                  milestoneYear &&
+                  milestoneYear.year <= currentAge + projectionYears
+                ) {
+                  return (
+                    <div
+                      key={milestone}
+                      className="flex justify-between items-center py-2 border-b border-white/5"
+                    >
+                      <span className="text-white/80">
+                        ${(milestone / 1000).toLocaleString()}k
+                      </span>
+                      <span className="text-emerald-400 font-semibold">
+                        Age {milestoneYear.year}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
+}
+
+function simulateNetWorthSeries({
+  startingNetWorth,
+  annualContribution,
+  realReturn,
+  years,
+  delayYears,
+}: {
+  startingNetWorth: number;
+  annualContribution: number;
+  realReturn: number;
+  years: number;
+  delayYears: number;
+}) {
+  const series: number[] = [Math.round(startingNetWorth)];
+  let netWorth = startingNetWorth;
+  const r = realReturn / 100;
+  const safeDelayYears = Math.max(delayYears, 0);
+
+  for (let year = 1; year <= years; year++) {
+    netWorth *= 1 + r;
+    if (year > safeDelayYears) netWorth += annualContribution;
+    series.push(Math.round(netWorth));
+  }
+
+  return series;
+}
+
+function getProbabilityLevel({
+  targetAmount,
+  baseProjection,
+  lowProjection,
+}: {
+  targetAmount: number;
+  baseProjection: number;
+  lowProjection: number;
+}): ProbabilityLevel {
+  if (lowProjection >= targetAmount) return "high";
+  if (baseProjection >= targetAmount) return "medium";
+  return "low";
 }
 
 function InputField({

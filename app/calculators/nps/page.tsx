@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Shield, PiggyBank, BarChart } from "lucide-react";
+import StartNowVsWaitCard, {
+  type ProbabilityLevel,
+} from "@/components/StartNowVsWaitCard";
 
 export default function NPSCalculator() {
   const [monthlyContribution, setMonthlyContribution] = useState(5000);
@@ -30,6 +33,80 @@ export default function NPSCalculator() {
   const lumpSum = corpus - pensionCorpus;
   const monthlyPension = (pensionCorpus * (annuityRate / 100)) / 12;
   const pensionYears = 1 / (annuityRate / 100);
+
+  const WAIT_MONTHS = 12;
+  const RETURN_BUFFER_PCT = 4;
+
+  const startNowSeries = useMemo(() => {
+    return simulateMonthlyContributionSeries({
+      monthlyInvestment: monthlyContribution,
+      monthlyRate,
+      monthsTotal: months,
+      delayMonths: 0,
+    });
+  }, [monthlyContribution, monthlyRate, months]);
+
+  const waitSeries = useMemo(() => {
+    return simulateMonthlyContributionSeries({
+      monthlyInvestment: monthlyContribution,
+      monthlyRate,
+      monthsTotal: months,
+      delayMonths: WAIT_MONTHS,
+    });
+  }, [monthlyContribution, monthlyRate, months]);
+
+  const waitFinal = waitSeries.at(-1) || 0;
+  const costOfWaiting = Math.max(corpus - waitFinal, 0);
+
+  const extraIfWait = useMemo(() => {
+    const investMonths = months - WAIT_MONTHS;
+    if (investMonths <= 0) return Number.POSITIVE_INFINITY;
+    if (monthlyRate === 0) {
+      return Math.max(corpus / investMonths - monthlyContribution, 0);
+    }
+    const factor =
+      ((Math.pow(1 + monthlyRate, investMonths) - 1) / monthlyRate) *
+      (1 + monthlyRate);
+    const required = corpus / factor;
+    return Math.max(required - monthlyContribution, 0);
+  }, [corpus, monthlyContribution, monthlyRate, months]);
+
+  const lowReturn = Math.max(expectedReturn - RETURN_BUFFER_PCT, 0);
+  const lowMonthlyRate = lowReturn / 12 / 100;
+
+  const startLowFinal = useMemo(() => {
+    return (
+      simulateMonthlyContributionSeries({
+        monthlyInvestment: monthlyContribution,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: months,
+        delayMonths: 0,
+      }).at(-1) || 0
+    );
+  }, [lowMonthlyRate, monthlyContribution, months]);
+
+  const waitLowFinal = useMemo(() => {
+    return (
+      simulateMonthlyContributionSeries({
+        monthlyInvestment: monthlyContribution,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: months,
+        delayMonths: WAIT_MONTHS,
+      }).at(-1) || 0
+    );
+  }, [lowMonthlyRate, monthlyContribution, months]);
+
+  const probabilityStartNow = getProbabilityLevel({
+    targetAmount: corpus,
+    baseProjection: corpus,
+    lowProjection: startLowFinal,
+  });
+
+  const probabilityWait = getProbabilityLevel({
+    targetAmount: corpus,
+    baseProjection: waitFinal,
+    lowProjection: waitLowFinal,
+  });
 
   const faqs = [
     {
@@ -165,29 +242,119 @@ export default function NPSCalculator() {
                 80CCD(1B). Pension is taxable; 60% lump sum is currently tax-free (policy-dependent).
               </p>
             </div>
-
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <BarChart className="w-5 h-5 text-emerald-300" />
-                <h3 className="text-xl font-bold">FAQs</h3>
-              </div>
-              <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
-                {faqs.map((item) => (
-                  <details
-                    key={item.q}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
-                  >
-                    <summary className="cursor-pointer text-white">{item.q}</summary>
-                    <p className="mt-2 text-white/70">{item.a}</p>
-                  </details>
-                ))}
-              </div>
-            </div>
           </motion.div>
+        </div>
+
+        <div className="mt-10 space-y-6">
+          <StartNowVsWaitCard
+            theme={{ headerGradientClassName: "from-emerald-500 to-teal-500" }}
+            subtitle="Same monthly contribution — just delaying the first 12 months."
+            startNowSeries={startNowSeries}
+            waitSeries={waitSeries}
+            goalLine={{ label: "Start-now target", value: corpus }}
+            horizonLabels={{
+              start: "Today",
+              mid: `Year ${Math.floor((retirementAge - currentAge) / 2)}`,
+              end: `Age ${retirementAge}`,
+            }}
+            stats={[
+              {
+                label: "Cost of waiting",
+                value: `₹${Math.round(costOfWaiting).toLocaleString("en-IN")}`,
+                highlight: true,
+              },
+              {
+                label: "Extra NPS if you wait",
+                value: Number.isFinite(extraIfWait)
+                  ? `₹${Math.round(extraIfWait).toLocaleString("en-IN")}/mo`
+                  : "Not possible",
+              },
+              {
+                label: "Target (start now)",
+                value: `₹${Math.round(corpus).toLocaleString("en-IN")}`,
+              },
+            ]}
+            probability={{
+              startNow: probabilityStartNow,
+              wait: probabilityWait,
+            }}
+            probabilityNote={`Rule-of-thumb: compares ${expectedReturn}% vs ${lowReturn}% annual returns.`}
+            emailCapture={{
+              source: "nps",
+              payload: {
+                monthlyContribution,
+                expectedReturn,
+                currentAge,
+                retirementAge,
+                pensionAllocation,
+                annuityRate,
+                costOfWaiting: Math.round(costOfWaiting),
+                extraIfWait: Number.isFinite(extraIfWait)
+                  ? Math.round(extraIfWait)
+                  : "infinite",
+              },
+            }}
+          />
+
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <div className="flex items-center gap-3 mb-4">
+              <BarChart className="w-5 h-5 text-emerald-300" />
+              <h3 className="text-xl font-bold">FAQs</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
+              {faqs.map((item) => (
+                <details
+                  key={item.q}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                >
+                  <summary className="cursor-pointer text-white">{item.q}</summary>
+                  <p className="mt-2 text-white/70">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
+}
+
+function simulateMonthlyContributionSeries({
+  monthlyInvestment,
+  monthlyRate,
+  monthsTotal,
+  delayMonths,
+}: {
+  monthlyInvestment: number;
+  monthlyRate: number;
+  monthsTotal: number;
+  delayMonths: number;
+}) {
+  const series: number[] = [0];
+  let balance = 0;
+  const safeDelayMonths = Math.max(delayMonths, 0);
+
+  for (let month = 1; month <= monthsTotal; month++) {
+    if (month > safeDelayMonths) balance = (balance + monthlyInvestment) * (1 + monthlyRate);
+    else balance *= 1 + monthlyRate;
+    series.push(balance);
+  }
+
+  return series;
+}
+
+function getProbabilityLevel({
+  targetAmount,
+  baseProjection,
+  lowProjection,
+}: {
+  targetAmount: number;
+  baseProjection: number;
+  lowProjection: number;
+}): ProbabilityLevel {
+  if (lowProjection >= targetAmount) return "high";
+  if (baseProjection >= targetAmount) return "medium";
+  return "low";
 }
 
 function InputField({

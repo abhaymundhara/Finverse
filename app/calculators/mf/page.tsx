@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { LineChart, Coins } from "lucide-react";
+import StartNowVsWaitCard, {
+  type ProbabilityLevel,
+} from "@/components/StartNowVsWaitCard";
 
 type Method = "lumpsum" | "sip";
 
@@ -58,6 +61,141 @@ export default function MFCalculator() {
       a: "Many use 10–12% for diversified equity over long horizons; be conservative for planning.",
     },
   ];
+
+  const startNowVsWait = useMemo(() => {
+    const lowRate = Math.max(rate - RETURN_BUFFER_PCT, 0);
+
+    if (method === "lumpsum") {
+      const startNowSeries = simulateLumpSumSeries({
+        principal: lumpSum,
+        annualRate: rate,
+        monthsTotal: months,
+        delayMonths: 0,
+      });
+      const waitSeries = simulateLumpSumSeries({
+        principal: lumpSum,
+        annualRate: rate,
+        monthsTotal: months,
+        delayMonths: WAIT_MONTHS,
+      });
+
+      const target = startNowSeries.at(-1) || 0;
+      const waitFinal = waitSeries.at(-1) || 0;
+      const costOfWaiting = Math.max(target - waitFinal, 0);
+
+      const extraNeeded = (() => {
+        if (months < WAIT_MONTHS) return Number.POSITIVE_INFINITY;
+        const tYears = (months - WAIT_MONTHS) / 12;
+        const factor = Math.pow(1 + rate / 100, tYears);
+        const required = factor > 0 ? target / factor : Number.POSITIVE_INFINITY;
+        return Math.max(required - lumpSum, 0);
+      })();
+
+      const startLowFinal =
+        simulateLumpSumSeries({
+          principal: lumpSum,
+          annualRate: lowRate,
+          monthsTotal: months,
+          delayMonths: 0,
+        }).at(-1) || 0;
+      const waitLowFinal =
+        simulateLumpSumSeries({
+          principal: lumpSum,
+          annualRate: lowRate,
+          monthsTotal: months,
+          delayMonths: WAIT_MONTHS,
+        }).at(-1) || 0;
+
+      return {
+        startNowSeries,
+        waitSeries,
+        target,
+        costOfWaiting,
+        lowRate,
+        extraNeededLabelValue: Number.isFinite(extraNeeded)
+          ? `₹${Math.round(extraNeeded).toLocaleString("en-IN")}`
+          : "Not possible",
+        extraNeededRaw: Number.isFinite(extraNeeded) ? Math.round(extraNeeded) : "infinite",
+        probabilityStartNow: getProbabilityLevel({
+          targetAmount: target,
+          baseProjection: target,
+          lowProjection: startLowFinal,
+        }),
+        probabilityWait: getProbabilityLevel({
+          targetAmount: target,
+          baseProjection: waitFinal,
+          lowProjection: waitLowFinal,
+        }),
+      };
+    }
+
+    // SIP
+    const startNowSeries = simulateMonthlySipSeries({
+      monthlyInvestment: monthlySip,
+      monthlyRate,
+      monthsTotal: months,
+      delayMonths: 0,
+    });
+    const waitSeries = simulateMonthlySipSeries({
+      monthlyInvestment: monthlySip,
+      monthlyRate,
+      monthsTotal: months,
+      delayMonths: WAIT_MONTHS,
+    });
+
+    const target = startNowSeries.at(-1) || 0;
+    const waitFinal = waitSeries.at(-1) || 0;
+    const costOfWaiting = Math.max(target - waitFinal, 0);
+
+    const extraNeeded = (() => {
+      const investMonths = months - WAIT_MONTHS;
+      if (investMonths <= 0) return Number.POSITIVE_INFINITY;
+      if (monthlyRate === 0) return Math.max(target / investMonths - monthlySip, 0);
+      const factor =
+        ((Math.pow(1 + monthlyRate, investMonths) - 1) / monthlyRate) *
+        (1 + monthlyRate);
+      const required = target / factor;
+      return Math.max(required - monthlySip, 0);
+    })();
+
+    const lowMonthlyRate = lowRate / 12 / 100;
+    const startLowFinal =
+      simulateMonthlySipSeries({
+        monthlyInvestment: monthlySip,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: months,
+        delayMonths: 0,
+      }).at(-1) || 0;
+    const waitLowFinal =
+      simulateMonthlySipSeries({
+        monthlyInvestment: monthlySip,
+        monthlyRate: lowMonthlyRate,
+        monthsTotal: months,
+        delayMonths: WAIT_MONTHS,
+      }).at(-1) || 0;
+
+    return {
+      startNowSeries,
+      waitSeries,
+      target,
+      costOfWaiting,
+      lowRate,
+      extraNeededLabelValue: Number.isFinite(extraNeeded)
+        ? `₹${Math.round(extraNeeded).toLocaleString("en-IN")}/mo`
+        : "Not possible",
+      extraNeededRaw: Number.isFinite(extraNeeded) ? Math.round(extraNeeded) : "infinite",
+      probabilityStartNow: getProbabilityLevel({
+        targetAmount: target,
+        baseProjection: target,
+        lowProjection: startLowFinal,
+      }),
+      probabilityWait: getProbabilityLevel({
+        targetAmount: target,
+        baseProjection: waitFinal,
+        lowProjection: waitLowFinal,
+      }),
+    };
+  }, [lumpSum, method, monthlyRate, monthlySip, months, rate]);
 
   return (
     <div className="min-h-screen px-4 py-12">
@@ -160,29 +298,149 @@ export default function MFCalculator() {
                 annualized return and ignores taxes and dividends.
               </p>
             </div>
-
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <LineChart className="w-5 h-5 text-emerald-300" />
-                <h3 className="text-xl font-bold">FAQs</h3>
-              </div>
-              <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
-                {faqs.map((item) => (
-                  <details
-                    key={item.q}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
-                  >
-                    <summary className="cursor-pointer text-white">{item.q}</summary>
-                    <p className="mt-2 text-white/70">{item.a}</p>
-                  </details>
-                ))}
-              </div>
-            </div>
           </motion.div>
+        </div>
+
+        <div className="mt-10 space-y-6">
+          <StartNowVsWaitCard
+            theme={{ headerGradientClassName: "from-green-500 to-emerald-500" }}
+            subtitle={`Same ${method === "lumpsum" ? "investment date" : "monthly SIP"} amount — just delaying by 12 months.`}
+            startNowSeries={startNowVsWait.startNowSeries}
+            waitSeries={startNowVsWait.waitSeries}
+            goalLine={{ label: "Start-now target", value: startNowVsWait.target }}
+            horizonLabels={{
+              start: "Today",
+              mid: `Year ${Math.floor(years / 2)}`,
+              end: `Year ${years}`,
+            }}
+            stats={[
+              {
+                label: "Cost of waiting",
+                value: `₹${Math.round(startNowVsWait.costOfWaiting).toLocaleString(
+                  "en-IN"
+                )}`,
+                highlight: true,
+              },
+              {
+                label:
+                  method === "lumpsum"
+                    ? "Extra deposit if you wait"
+                    : "Extra SIP if you wait",
+                value: startNowVsWait.extraNeededLabelValue,
+              },
+              {
+                label: "Target (start now)",
+                value: `₹${Math.round(startNowVsWait.target).toLocaleString("en-IN")}`,
+              },
+            ]}
+            probability={{
+              startNow: startNowVsWait.probabilityStartNow,
+              wait: startNowVsWait.probabilityWait,
+            }}
+            probabilityNote={`Rule-of-thumb: compares ${rate}% vs ${startNowVsWait.lowRate}% annual returns.`}
+            emailCapture={{
+              source: "mf",
+              payload: {
+                method,
+                lumpSum,
+                monthlySip,
+                rate,
+                years,
+                costOfWaiting: Math.round(startNowVsWait.costOfWaiting),
+                extraNeeded: startNowVsWait.extraNeededRaw,
+              },
+            }}
+          />
+
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+            <div className="flex items-center gap-3 mb-4">
+              <LineChart className="w-5 h-5 text-emerald-300" />
+              <h3 className="text-xl font-bold">FAQs</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3 text-sm text-white/80">
+              {faqs.map((item) => (
+                <details
+                  key={item.q}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2"
+                >
+                  <summary className="cursor-pointer text-white">{item.q}</summary>
+                  <p className="mt-2 text-white/70">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
+}
+
+const WAIT_MONTHS = 12;
+const RETURN_BUFFER_PCT = 4;
+
+function getProbabilityLevel({
+  targetAmount,
+  baseProjection,
+  lowProjection,
+}: {
+  targetAmount: number;
+  baseProjection: number;
+  lowProjection: number;
+}): ProbabilityLevel {
+  if (lowProjection >= targetAmount) return "high";
+  if (baseProjection >= targetAmount) return "medium";
+  return "low";
+}
+
+function simulateLumpSumSeries({
+  principal,
+  annualRate,
+  monthsTotal,
+  delayMonths,
+}: {
+  principal: number;
+  annualRate: number;
+  monthsTotal: number;
+  delayMonths: number;
+}) {
+  const series: number[] = [];
+  const r = annualRate / 100;
+  const safeDelay = Math.max(delayMonths, 0);
+
+  for (let month = 0; month <= monthsTotal; month++) {
+    if (month < safeDelay) {
+      series.push(0);
+      continue;
+    }
+    const tYears = (month - safeDelay) / 12;
+    series.push(principal * Math.pow(1 + r, tYears));
+  }
+
+  return series;
+}
+
+function simulateMonthlySipSeries({
+  monthlyInvestment,
+  monthlyRate,
+  monthsTotal,
+  delayMonths,
+}: {
+  monthlyInvestment: number;
+  monthlyRate: number;
+  monthsTotal: number;
+  delayMonths: number;
+}) {
+  const series: number[] = [0];
+  let balance = 0;
+  const safeDelayMonths = Math.max(delayMonths, 0);
+
+  for (let month = 1; month <= monthsTotal; month++) {
+    if (month > safeDelayMonths) balance = (balance + monthlyInvestment) * (1 + monthlyRate);
+    else balance *= 1 + monthlyRate;
+    series.push(balance);
+  }
+
+  return series;
 }
 
 function InputField({
