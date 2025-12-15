@@ -367,30 +367,19 @@ function EmailCapture({
 
     setStatus("submitting");
 
-    try {
-      const response = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: trimmed,
-          source,
-          path,
-          ...payload,
-        }),
-      });
-
-      if (response.ok) {
-        setStatus("submitted");
-        setEmail("");
-      } else {
-        setStatus("error");
-      }
-    } catch (error) {
-      console.error("Subscription error:", error);
-      setStatus("error");
-    }
+    // Simulate submission for static site
+    setTimeout(() => {
+      setStatus("submitted");
+      setEmail("");
+      console.log(
+        "Email captured:",
+        trimmed,
+        "source:",
+        source,
+        "payload:",
+        payload
+      );
+    }, 500);
   };
 
   return (

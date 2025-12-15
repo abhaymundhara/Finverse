@@ -25,29 +25,12 @@ export default function CTA() {
 
     setStatus("submitting");
 
-    try {
-      const response = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: trimmed,
-          source: "waitlist",
-          path: "/",
-        }),
-      });
-
-      if (response.ok) {
-        setStatus("submitted");
-        setEmail("");
-      } else {
-        setStatus("error");
-      }
-    } catch (error) {
-      console.error("Subscription error:", error);
-      setStatus("error");
-    }
+    // Simulate submission for static site
+    setTimeout(() => {
+      setStatus("submitted");
+      setEmail("");
+      console.log("Email captured:", trimmed, "source: waitlist");
+    }, 500);
   };
   return (
     <section className="py-32 px-4 bg-transparent relative overflow-hidden">
